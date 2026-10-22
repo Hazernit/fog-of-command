@@ -1,0 +1,20 @@
+name: Feature proposal
+description: Предложить механику с явной ценностью и scope
+labels: ["type:proposal"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую проблему игрока решаем?
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Проверяемый результат и сценарий
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Ограничения, зависимости и что НЕ входит

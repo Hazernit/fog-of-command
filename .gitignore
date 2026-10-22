@@ -1,0 +1,39 @@
+# Unreal Engine build/intermediate/cache
+Binaries/
+Build/*
+!Build/README.md
+!Build/**/README.md
+Intermediate/
+Saved/
+DerivedDataCache/
+.vs/
+.vscode/
+.idea/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.xcworkspace/
+*.xcodeproj/
+*.xcuserstate
+*.xcsettings
+*.DS_Store
+Thumbs.db
+# Local environments, logs and tokens
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+*.log
+*.tmp
+*.bak
+# Unreal user-specific content
+Content/Developers/
+Content/Developer/
+# Generated issue import state / scratch
+.issue-import-state.json
+.tmp/

@@ -1,0 +1,19 @@
+name: Bug report
+description: Сообщить о воспроизводимой ошибке
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: repro
+    attributes:
+      label: Шаги воспроизведения
+      description: Ожидаемый и фактический результат, версия/ветка, скриншоты и логи без секретов.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Версия UE / commit
+  - type: textarea
+    id: impact
+    attributes:
+      label: Влияние на игровой процесс / WorldState / PerceivedWorldState

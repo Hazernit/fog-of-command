@@ -1,0 +1,19 @@
+name: Repository checks
+on:
+  push:
+    paths:
+      - 'backlog/**'
+      - 'scripts/validate_backlog.py'
+      - '.github/workflows/repo-checks.yml'
+  pull_request:
+    paths:
+      - 'backlog/**'
+      - 'scripts/validate_backlog.py'
+      - '.github/workflows/repo-checks.yml'
+jobs:
+  validate-backlog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate issue metadata and dependencies
+        run: python3 scripts/validate_backlog.py
