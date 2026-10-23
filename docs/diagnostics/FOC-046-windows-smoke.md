@@ -37,8 +37,10 @@
 | Новая UE5.8.4 обнаружена | **PASS** | Два локальных источника версии и build tools |
 | MSVC/SDK inventory | **PASS** | vswhere, executable/file versions, SDK headers/libs/tools |
 | Clean project C++ build UE5.8.4 | **PASS** | Native exit **0**, wall time **93.037 с**, UBT **90.70 с** |
-| Editor / C++ module load / DX12 | **NOT RUN** | Только после успешного build |
-| 3 цикла PIE, 30 минут, повторное открытие | **NOT RUN** | Нужны реальные runtime доказательства |
+| Editor / C++ module load / DX12 | **PASS** функционально | DLL загружена, D3D12/SM5, RTX4070; startup automation errors учтены отдельно |
+| 3 коротких цикла PIE | **PASS** | Три Play/Stop, Selected Viewport, карта `/Game/Smoke`, UI и runtime log |
+| 30 минут PIE / повторное открытие | **NOT RUN** | Следующие этапы, пока не засчитываются |
+| Встроенные startup automation checks | **FAIL** | 17 сообщений `Condition failed`, первопричина пока UNKNOWN |
 | GPU telemetry/events и независимая нагрузка | **NOT RUN** | Нельзя заменить инвентаризацией драйвера |
 | Приёмка версии владельцем | **NOT RUN** | #53/#7 не закрываются, PR остаётся Draft |
 
@@ -76,3 +78,25 @@ Total execution time: 90.70 seconds
 ```
 
 При FAIL сначала разбирать фактический UBT log. У скрипта есть опциональный CompilerVersion для явного выбора уже установленного компилятора; в успешном прогоне он не понадобился. Глобальный XML и исходники движка не изменялись. Ничего не устанавливать автоматически.
+
+## Этап 3: Editor и короткие PIE циклы
+
+Editor запущен отдельно на новом проекте с `-dx12 -log -abslog=<LOCAL_EDITOR_LOG>`; MyProject не открывался. В логе загружен `UnrealEditor-Foc046Smoke.dll`, `Engine is initialized`; engine initialization44.84с. Реально выбран **D3D12, SM5**, адаптер **RTX4070**, driver **617.42**. Максимальные возможности адаптера FL12_2/SM6.7 не означают использование SM6; SM6/Lumen/Nanite — **NOT RUN**.
+
+Через реальный Windows UI создан новый **Basic** level, сохранён только во временном проекте как `/Game/Smoke`. Проверен режим **Selected Viewport**, затем выполнены три Play/Stop; лог содержит `Bringing World /Game/UEDPIE_0_Smoke.Smoke up for play` и `BeginTearingDown` для каждого:
+
+| Цикл | Play / Stop, +03:00 | Результат |
+|---|---|---|
+| 1 | 03:14:35.690 / 03:14:44.659 | PASS |
+| 2 | 03:14:53.704 / 03:15:22.190 | PASS |
+| 3 | 03:15:38.205 / 03:16:02.932 | PASS |
+
+![Реальный PIE во временном Foc046Smoke](images/FOC-046-pie.jpg)
+
+Скриншот оригинальный, без генерации/изменения изображения; перед публикацией проверено отсутствие личных путей и других приложений. Первоначальный capture неактуального startup window дал ошибку Computer Use; после выбора текущего окна и foreground activation снимок Editor получен. Это ошибка UI observation, не доказательство сбоя UE.
+
+В startup log есть **17 `LogAutomationTest: Error: Condition failed`**. Исходники установленного Engine подтверждают автоматический вызов `RunSmokeTests()` и generic `CHECK` без выражения в сообщении. Имена/итоги отдельных тестов при обычном уровне логирования не видны. Возможная связь с ru-RU и сравнениями локализованных сообщений с английскими литералами во встроенных UnifiedError tests остаётся **гипотезой**, точная атрибуция всех17 **UNKNOWN**. Эти ошибки не считать исправленными или безвредными. Функциональный Editor/PIE PASS не равен запуску без ошибок.
+
+В проверенной части журнала отсутствовали fatal/assert/ensure, device removed/GPU crash и ошибки загрузки проектного модуля. Также есть сообщения об отсутствующих optional profiling DLLs и SDK других платформ; другие платформы — **NOT RUN**. Editor при первом запуске автоматически инициализировал штатный локальный Zen cache service из уже установленного Engine; отдельный installer или обновление агент не запускал.
+
+GPU baseline до Editor: **02:54:05–03:09:05 +03:00** System log прочитан обычным пользователем вне sandbox; среди5событий0 совпадений Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008. `nvidia-smi` exit0:51°C, GPU5%, P8, VRAM1195/12282MiB. Это baseline, не оценка стабильности. OS build26300.9711/26H2 Professional; CPUi9-9900K, usableRAM63.85GiB. Повторный запрос физически установленной RAM недоступен в sandbox (**NOT RUN**, Access denied), это не отсутствие памяти.
