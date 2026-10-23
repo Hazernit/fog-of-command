@@ -100,3 +100,31 @@ Editor запущен отдельно на новом проекте с `-dx12 
 В проверенной части журнала отсутствовали fatal/assert/ensure, device removed/GPU crash и ошибки загрузки проектного модуля. Также есть сообщения об отсутствующих optional profiling DLLs и SDK других платформ; другие платформы — **NOT RUN**. При первом запуске Editor **автоматически скопировал/установил bundled Zen cache service из Engine в пользовательский cache**, записал его конфигурацию и сообщил миграцию default cache path. Это наблюдаемый побочный эффект штатного запуска Editor; отдельный installer или обновление агент не запускал. Сообщение о будущем удалении старой cache location не доказывает фактическое удаление — оно отдельно не проверялось.
 
 GPU baseline до Editor: **02:54:05–03:09:05 +03:00** System log прочитан обычным пользователем вне sandbox; среди5событий0 совпадений Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008. `nvidia-smi` exit0:51°C, GPU5%, P8, VRAM1195/12282MiB. Это baseline, не оценка стабильности. OS build26300.9711/26H2 Professional; CPUi9-9900K, usableRAM63.85GiB. Повторный запрос физически установленной RAM недоступен в sandbox (**NOT RUN**, Access denied), это не отсутствие памяти.
+
+## Переносимая процедура Editor/PIE/GPU
+
+После exit0 открыть новый проект, используя только локальные значения переменных:
+
+```powershell
+& (Join-Path $env:UE_ROOT 'Engine/Binaries/Win64/UnrealEditor.exe') `
+  $env:SMOKE_PROJECT /Engine/Maps/Entry -dx12 -log `
+  "-abslog=$(Join-Path $env:SMOKE_EVIDENCE 'editor-dx12.log')"
+```
+
+1. Проверить именно Foc046Smoke в заголовке и загрузку модуля в log. **File → New Level → Basic**, затем **Save Current Level As → /Game/Smoke** только внутри временного проекта. Подождать завершения shader preparation.
+2. В меню Play выбрать **Selected Viewport**, Play, а не Simulate/Standalone. Сделать три Play/Stop. Лог должен содержать world `/Game/UEDPIE_0_Smoke`, а не только запуск процесса Editor.
+3. Включить ещё один непрерывный PIE минимум на1800с, записать реальное начало/конец. Для read-only telemetry использовать скрипт ниже, подставляя локальный PID тестового Editor:
+
+```powershell
+./scripts/windows/collect_foc046_gpu_telemetry.ps1 `
+  -EditorProcessId $EditorProcessId `
+  -EditorLog (Join-Path $env:SMOKE_EVIDENCE 'editor-dx12.log') `
+  -EvidenceRoot $env:GPU_EVIDENCE_ROOT -DurationSeconds 1800 -IntervalSeconds 10
+```
+
+4. Сам collector не управляет PIE и не доказывает его активность; сопоставить UI, world start/teardown в log, фактические часы, интервалы телеметрии, ошибки доступа и System events. При артефактах, driver reset, fatal/device removed остановить runtime и сохранить доказательства. Kernel-Power41 сам по себе не устанавливает причину.
+5. Остановить PIE, штатно закрыть только тестовый Editor, снова открыть этот проект с `/Game/Smoke` и новым `-abslog`, сделать Play/Stop и проверить второй log. Встроенным automation checks уделить отдельное внимание; при необходимости добавить процессный `-LogCmds="LogAutomationTest Log"` для имён тестов. Этот диагностический повтор пока **NOT RUN**.
+
+Непрерывный прогон начат **03:17:02.993 +03:00**. Telemetry collector начал30минутный интервал в **03:18:47.890 +03:00**, поэтому runtime будет продолжен до завершения сбора. Это промежуточное состояние, завершённый30min gate пока **NOT RUN**.
+
+`python scripts/validate_backlog.py` выполнен: **PASS**, `OK: 45 task issues, 6 epics, all dependencies and GDD files present`. PowerShell parser, проверки guards runner и `git diff --check` — **PASS**. Эти проверки не заменяют runtime. Raw-данные и абсолютные значения переменных не коммитятся.
