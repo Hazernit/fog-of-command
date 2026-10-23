@@ -127,4 +127,6 @@ GPU baseline до Editor: **02:54:05–03:09:05 +03:00** System log прочит
 
 Непрерывный прогон начат **03:17:02.993 +03:00**. Telemetry collector начал30минутный интервал в **03:18:47.890 +03:00**, поэтому runtime будет продолжен до завершения сбора. Это промежуточное состояние, завершённый30min gate пока **NOT RUN**.
 
+Промежуточный checkpoint **03:32:18 +03:00**: примерно15минут непрерывного PIE; повторный снимок окна подтверждает активную игру и обновившуюся сцену. Собрана81проба telemetry, последняя50°C/GPU40%, EditorResponding=true,0ошибок опроса и0новых GPU/fatal совпадений. Это не завершённый30min gate и не независимый GPU stress test.
+
 `python scripts/validate_backlog.py` выполнен: **PASS**, `OK: 45 task issues, 6 epics, all dependencies and GDD files present`. PowerShell parser, проверки guards runner и `git diff --check` — **PASS**. Эти проверки не заменяют runtime. Raw-данные и абсолютные значения переменных не коммитятся.
