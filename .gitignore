@@ -37,3 +37,17 @@ Content/Developer/
 # Generated issue import state / scratch
 .issue-import-state.json
 .tmp/
+
+# Raw crash/debug archives and private diagnostic captures
+*.dmp
+*.mdmp
+*.etl
+*.har
+*.pfx
+*.p12
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+diagnostics/raw/
+diagnostics/private/
