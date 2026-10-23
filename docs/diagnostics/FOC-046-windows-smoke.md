@@ -40,7 +40,7 @@
 | Editor / C++ module load / DX12 | **PASS** функционально | DLL загружена, D3D12/SM5, RTX4070; startup automation errors учтены отдельно |
 | 3 коротких цикла PIE | **PASS** | Три Play/Stop, Selected Viewport, карта `/Game/Smoke`, UI и runtime log |
 | Непрерывный PIE минимум30минут | **PASS** | 03:17:02.648–03:49:24.197, **1941.549с**; UI, world start/teardown и telemetry |
-| Повторное открытие / PIE | **NOT RUN** | Следующий этап |
+| Повторное открытие / PIE | **PASS** | Штатное закрытие, reopen той же карты; PIE03:51:24.925–03:51:37.865 |
 | Встроенные startup automation checks | **FAIL** | 17 сообщений `Condition failed`, первопричина пока UNKNOWN |
 | GPU telemetry / System events во время PIE | **PASS** как наблюдение | 1800.002с,178проб,49–51°C,0новых GPU/fatal строк,0выбранных событий |
 | Независимая GPU-нагрузка / общая стабильность драйвера | **NOT RUN** | Результат ограничен этой базовой DX12-сценой |
@@ -125,7 +125,7 @@ GPU baseline до Editor: **02:54:05–03:09:05 +03:00** System log прочит
 ```
 
 4. Сам collector не управляет PIE и не доказывает его активность; сопоставить UI, world start/teardown в log, фактические часы, интервалы телеметрии, ошибки доступа и System events. При артефактах, driver reset, fatal/device removed остановить runtime и сохранить доказательства. Kernel-Power41 сам по себе не устанавливает причину.
-5. Остановить PIE, штатно закрыть только тестовый Editor, снова открыть этот проект с `/Game/Smoke` и новым `-abslog`, сделать Play/Stop и проверить второй log. Встроенным automation checks уделить отдельное внимание; при необходимости добавить процессный `-LogCmds="LogAutomationTest Log"` для имён тестов. Этот диагностический повтор пока **NOT RUN**.
+5. Остановить PIE, штатно закрыть только тестовый Editor, снова открыть этот проект с `/Game/Smoke` и новым `-abslog`, сделать Play/Stop и проверить второй log. Встроенным automation checks уделить отдельное внимание; процессный `-LogCmds="LogAutomationTest Log"` использован для имён тестов в выполненном повторе.
 
 Непрерывный прогон фактически выполнен **03:17:02.648–03:49:24.197 +03:00**, **1941.549с (32мин21.549с)** по world start/teardown. UI-наблюдение старта03:17:02.993 и последующие снимки подтверждают PIE; завершение выполнено штатной кнопкой Stop после полного telemetry интервала. Повторная проверка перед Stop показала активную игру,18actors и обновившееся небо; после Stop Editor вернулся к8actors.
 
@@ -147,3 +147,17 @@ Read-only collector завершился exit0: **03:18:47.890–03:48:47.892**,
 Это подтверждает отсутствие наблюдаемого сбоя в данном сценарии. Независимая тяжёлая GPU-нагрузка, общая сертификация стабильности ПК/драйвера и причинная диагностика прежних сбоев — **NOT RUN**. Driver/BIOS/частоты не менялись; аппаратный blocker без наблюдаемого сбоя не создавался.
 
 `python scripts/validate_backlog.py` выполнен: **PASS**, `OK: 45 task issues, 6 epics, all dependencies and GDD files present`. PowerShell parser, проверки guards runner и `git diff --check` — **PASS**. Эти проверки не заменяют runtime. Raw-данные и абсолютные значения переменных не коммитятся.
+
+## Повторное открытие и уточнение startup errors
+
+Первый Editor закрыт штатным CloseEditor, журнал содержит `Preparing to exit`. Тот же собранный проект и сохранённая `/Game/Smoke` повторно открыты с `-dx12 -log -LogCmds="LogAutomationTest Log"`, отдельный log. Модуль загружен, Engine initialized, DX12/SM5/RTX4070 подтверждены; Play03:51:24.925, Stop03:51:37.865 — **PASS**. Это повтор без пересборки или изменения исходников.
+
+Подробный RU-log установил точную атрибуцию всех17ошибок:
+
+| Встроенный тест Engine | RU-result | Condition failed |
+|---|---|---|
+| `FUnifiedErrorTest_CreateErrorMessage` | FAIL | 7 |
+| `FUnifiedErrorTest_CreateErrorMessageWithContext` | FAIL | 4 |
+| `FStructuredLogFormatTest` | FAIL | 6 |
+
+`StructuredLogSmoke` и остальные просмотренные UnifiedError tests — PASS. Поэтому первоначальная точная атрибуция UNKNOWN уточнена, но первопричина ещё не объявляется установленной. Следующий узкий диагностический запуск с процессным `-culture=en` — пока **NOT RUN**; он не меняет установленный Engine/toolchain. Снимок language/culture preference keys до сравнения:0сохранённых ключей в проверенных global/project INI; raw snapshot остаётся локально.

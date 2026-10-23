@@ -10,7 +10,7 @@
 | Target | Windows 11 x64, основная рабочая станция |
 | CPU / GPU / RAM | Локально: i9-9900K / RTX4070 / **63.85GiB usable**; свежий API installed-RAM недоступен |
 | Проверка стабильности драйверов | Runtime observation **PASS**: driver617.42,30мин telemetry,49–51°C,0выбранных событий/GPUfatal; независимая нагрузка **NOT RUN** |
-| Проверка PIE | Три коротких Play/Stop и **32мин21.549с** непрерывного PIE **PASS**; reopen **NOT RUN** |
+| Проверка PIE | Три коротких Play/Stop, **32мин21.549с** непрерывного PIE и повторное открытие/PIE **PASS** |
 | Проверка чистого C++ build | **PASS**, exit0, **93.037с** wall time, **90.70с** UBT; новый Blank C++ модуль вне Git |
 
 Команды, очищенные выдержки и оригинальный проверенный снимок PIE: [smoke отчёт](diagnostics/FOC-046-windows-smoke.md).
