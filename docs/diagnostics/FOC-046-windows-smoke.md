@@ -2,12 +2,12 @@
 
 Дата: 2026-10-23, Europe/Moscow. Задачи: [#53](https://github.com/Hazernit/fog-of-command/issues/53), [#7](https://github.com/Hazernit/fog-of-command/issues/7).
 
-Это поэтапный отчёт с реального Windows-ПК. Пока не выполнены build, Editor/PIE и GPU gate, конфигурация не принимается и Issues остаются открытыми. Движок в main по-прежнему TBD; кандидат PR #52 не равен принятому pin.
+Итог реальной проверки Windows: clean C++ build **PASS**, Editor/PIE, включая непрерывные **32мин21.549с** и повторное открытие, **PASS**; GPU smoke в этой сцене **PASS как наблюдение**. Встроенные startup tests при стандартной ru-RU: **425/428 PASS, 3 FAIL**; при процессном `-culture=en`: **428/428 PASS**. Это диагностическое сравнение, а не исправление установленного Engine. Issues остаются открытыми, [PR #54](https://github.com/Hazernit/fog-of-command/pull/54) — Draft. Принятие pin владельцем — **NOT RUN**; движок в main по-прежнему TBD, кандидат PR #52 не равен принятому pin.
 
 ## Область и сохранность данных
 
 - Проверяется одноразовый Blank C++ проект вне репозитория. FOC-002 не начинается, игровой `.uproject` не создаётся.
-- MyProject не изменяется; пользовательские Editor/IDE не закрываются.
+- MyProject агентом не открывался и не редактировался; закрывались только запущенные для проверки Editor временного проекта. Полная проверка всех файлов MyProject по хешам — **NOT RUN**.
 - Агент не запускает установщики/обновления движка, toolchain или драйвера и не меняет BIOS/сеть/защиту. Автоматические побочные действия первого запуска Editor описаны ниже отдельно.
 - В Git публикуются только переносимая процедура и отредактированные результаты. Raw-логи, скриншоты с личными данными, абсолютные локальные пути, токены и машинные идентификаторы остаются вне Git.
 
@@ -26,7 +26,9 @@
 | cl.exe versions | **19.29.30159**, **19.44.35229**, **19.51.36260** |
 | Windows SDK | **10.0.19041.0**, **10.0.22621.0**, **10.0.26100.0** |
 
-Именно установленный UE5.8 использует `Engine/Config/Windows/Windows_SDK.json`: MSVC minimum14.38.33130, preferred families14.50.35717–14.50.99999 и14.44.35207–14.44.99999. Важно различать toolset directory и actual compiler version: установленный каталог14.44.35207 содержит cl19.44.35229/UBT-version14.44.35229, выше исключённого диапазона14.44.0–14.44.35210. Установленный14.51 новее preferred. SDK minimum10.0.19041.0, main10.0.22621.0; SDK26100 присутствует. Окончательные selected MSVC/SDK будут зафиксированы по UBT log, наличие компонентов не является PASS сборки.
+Именно установленный UE5.8 использует `Engine/Config/Windows/Windows_SDK.json`: MSVC minimum14.38.33130, preferred families14.50.35717–14.50.99999 и14.44.35207–14.44.99999. Важно различать toolset directory и actual compiler version: установленный каталог14.44.35207 содержит cl19.44.35229/UBT-version14.44.35229, выше исключённого диапазона14.44.0–14.44.35210. Установленный14.51 новее preferred. SDK minimum10.0.19041.0, main10.0.22621.0; SDK26100 присутствует. Фактический UBT выбор и результат сборки приведены ниже.
+
+Desktop C++ workload установлен. NativeGame/GameDevelopment workload и Unreal IDE integration не зарегистрированы в проверенных VS instances. Их отсутствие не заблокировало фактический CLI build; для выполненного сценария отсутствующих обязательных компонентов не обнаружено. IDE-интеграция Unreal — **NOT RUN**, установка дополнительных компонентов не потребовалась.
 
 Старый UE5.3.2/MSVC14.51 запуск ранее завершался C4668/C4067 на `__has_feature`. Это отдельный исторический результат; он не переносится на UE5.8.4.
 
@@ -41,7 +43,7 @@
 | 3 коротких цикла PIE | **PASS** | Три Play/Stop, Selected Viewport, карта `/Game/Smoke`, UI и runtime log |
 | Непрерывный PIE минимум30минут | **PASS** | 03:17:02.648–03:49:24.197, **1941.549с**; UI, world start/teardown и telemetry |
 | Повторное открытие / PIE | **PASS** | Штатное закрытие, reopen той же карты; PIE03:51:24.925–03:51:37.865 |
-| Встроенные startup automation checks | **FAIL** | 17 сообщений `Condition failed`, первопричина пока UNKNOWN |
+| Встроенные startup automation checks | **RU FAIL / EN PASS** | ru-RU: 425/428 PASS, 3 FAIL, 17 `Condition failed`; `-culture=en`: 428/428 PASS |
 | GPU telemetry / System events во время PIE | **PASS** как наблюдение | 1800.002с,178проб,49–51°C,0новых GPU/fatal строк,0выбранных событий |
 | Независимая GPU-нагрузка / общая стабильность драйвера | **NOT RUN** | Результат ограничен этой базовой DX12-сценой |
 | Приёмка версии владельцем | **NOT RUN** | #53/#7 не закрываются, PR остаётся Draft |
@@ -72,6 +74,15 @@ Total execution time: 90.70 seconds
 
 Переменные `UE_ROOT`, `SMOKE_PROJECT`, `SMOKE_EVIDENCE` обозначают локальные пути оператора; их значения не публикуются. Проект будет новым, из текстового `TP_Blank` установленного движка; до первой сборки `Binaries` и `Intermediate` должны отсутствовать. Это чистая сборка проектного модуля на установленном движке, не пересборка Engine и не очистка общих DDC.
 
+Из корня рабочей ветки выполнить runner, указав локальную папку evidence вне Git; он сам создаст новый проект во временном каталоге и выполнит build:
+
+```powershell
+./scripts/windows/run_foc046_clean_smoke.ps1 `
+  -EngineRoot $env:UE_ROOT -EvidenceRoot $env:SMOKE_EVIDENCE_ROOT
+```
+
+Из итогового локального JSON взять `Project` и `EvidenceDirectory` как значения `SMOKE_PROJECT` и `SMOKE_EVIDENCE` для следующих шагов. Не публиковать этот JSON без очистки. Для явного размещения нового проекта у runner есть `-WorkspaceRoot` (папка должна ещё не существовать). Фактический build вызов runner:
+
 ```powershell
 & (Join-Path $env:UE_ROOT 'Engine/Build/BatchFiles/Build.bat') `
   Foc046SmokeEditor Win64 Development "-Project=$env:SMOKE_PROJECT" `
@@ -97,7 +108,7 @@ Editor запущен отдельно на новом проекте с `-dx12 
 
 Скриншот оригинальный, без генерации/изменения изображения; перед публикацией проверено отсутствие личных путей и других приложений. Первоначальный capture неактуального startup window дал ошибку Computer Use; после выбора текущего окна и foreground activation снимок Editor получен. Это ошибка UI observation, не доказательство сбоя UE.
 
-В startup log есть **17 `LogAutomationTest: Error: Condition failed`**. Исходники установленного Engine подтверждают автоматический вызов `RunSmokeTests()` и generic `CHECK` без выражения в сообщении. Имена/итоги отдельных тестов при обычном уровне логирования не видны. Возможная связь с ru-RU и сравнениями локализованных сообщений с английскими литералами во встроенных UnifiedError tests остаётся **гипотезой**, точная атрибуция всех17 **UNKNOWN**. Эти ошибки не считать исправленными или безвредными. Функциональный Editor/PIE PASS не равен запуску без ошибок.
+В первом startup log есть **17 `LogAutomationTest: Error: Condition failed`**. Исходники установленного Engine подтверждают автоматический вызов `RunSmokeTests()` и generic `CHECK` без выражения в сообщении. При обычном уровне логирования имена тестов не видны; поэтому первоначальная атрибуция была UNKNOWN. Выполненное ниже сравнение RU/EN уточнило все 17 ошибок и зависимость от culture. Функциональный Editor/PIE PASS не равен RU-запуску без ошибок.
 
 В проверенной части журнала отсутствовали fatal/assert/ensure, device removed/GPU crash и ошибки загрузки проектного модуля. Также есть сообщения об отсутствующих optional profiling DLLs и SDK других платформ; другие платформы — **NOT RUN**. При первом запуске Editor **автоматически скопировал/установил bundled Zen cache service из Engine в пользовательский cache**, записал его конфигурацию и сообщил миграцию default cache path. Это наблюдаемый побочный эффект штатного запуска Editor; отдельный installer или обновление агент не запускал. Сообщение о будущем удалении старой cache location не доказывает фактическое удаление — оно отдельно не проверялось.
 
@@ -129,7 +140,7 @@ GPU baseline до Editor: **02:54:05–03:09:05 +03:00** System log прочит
 
 Непрерывный прогон фактически выполнен **03:17:02.648–03:49:24.197 +03:00**, **1941.549с (32мин21.549с)** по world start/teardown. UI-наблюдение старта03:17:02.993 и последующие снимки подтверждают PIE; завершение выполнено штатной кнопкой Stop после полного telemetry интервала. Повторная проверка перед Stop показала активную игру,18actors и обновившееся небо; после Stop Editor вернулся к8actors.
 
-Промежуточный checkpoint **03:32:18 +03:00**: примерно15минут непрерывного PIE; повторный снимок окна подтверждает активную игру и обновившуюся сцену. Собрана81проба telemetry, последняя50°C/GPU40%, EditorResponding=true,0ошибок опроса и0новых GPU/fatal совпадений. Это не завершённый30min gate и не независимый GPU stress test.
+Промежуточный checkpoint **03:32:18 +03:00**: примерно15минут непрерывного PIE; повторный снимок окна подтверждает активную игру и обновившуюся сцену. Собрана81проба telemetry, последняя50°C/GPU40%, EditorResponding=true,0ошибок опроса и0новых GPU/fatal совпадений. Сам checkpoint ещё не завершал30min gate; итог полного интервала приведён далее.
 
 ![PIE после полного интервала наблюдения, перед Stop](images/FOC-046-pie-end.jpg)
 
@@ -142,7 +153,9 @@ Read-only collector завершился exit0: **03:18:47.890–03:48:47.892**,
 | VRAM used | **2257–2277MiB** |
 | Power draw | **67.67–78.53W** |
 
-Скан178приращений Editor log: **0** новых fatal/device-removed/GPU-error совпадений,0ошибок чтения/сбросов log. System log доступен: за pre-collection и collection интервалы **0** Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008 совпадений. Pre-collection окно может содержать ранее запущенный Editor/короткие PIE; оно не приписывается последующей нагрузке. Startup17automation ошибок остаются отдельным FAIL и не маскируются этой GPU-сводкой.
+Скан178приращений Editor log: **0** новых fatal/device-removed/GPU-error совпадений,0ошибок чтения/сбросов log. System log доступен: за pre-collection и collection интервалы **0** Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008 совпадений. Pre-collection окно может содержать ранее запущенный Editor/короткие PIE; оно не приписывается последующей нагрузке. Startup17automation ошибок RU остаются отдельным FAIL и не маскируются этой GPU-сводкой.
+
+После закрытия всех тестовых Editor повторно прочитан System за **03:09:00–03:54:14.289 +03:00**: 4 события, **0** выбранных GPU/hardware/unclean-shutdown событий, **0 Critical/Error/Warning**. Остальные — Information: Kernel-Power566×1 и Time-Service158×3; Kernel-Power566 не равен41. Последний `nvidia-smi` в03:54:14.635: exit0,53°C,GPU30%,P5,VRAM1485/12282MiB,19.23W. Это наблюдение после закрытия тестовых Editor, а не утверждение о простое всей системы.
 
 Это подтверждает отсутствие наблюдаемого сбоя в данном сценарии. Независимая тяжёлая GPU-нагрузка, общая сертификация стабильности ПК/драйвера и причинная диагностика прежних сбоев — **NOT RUN**. Driver/BIOS/частоты не менялись; аппаратный blocker без наблюдаемого сбоя не создавался.
 
@@ -160,4 +173,28 @@ Read-only collector завершился exit0: **03:18:47.890–03:48:47.892**,
 | `FUnifiedErrorTest_CreateErrorMessageWithContext` | FAIL | 4 |
 | `FStructuredLogFormatTest` | FAIL | 6 |
 
-`StructuredLogSmoke` и остальные просмотренные UnifiedError tests — PASS. Поэтому первоначальная точная атрибуция UNKNOWN уточнена, но первопричина ещё не объявляется установленной. Следующий узкий диагностический запуск с процессным `-culture=en` — пока **NOT RUN**; он не меняет установленный Engine/toolchain. Снимок language/culture preference keys до сравнения:0сохранённых ключей в проверенных global/project INI; raw snapshot остаётся локально.
+Всего в RU-повторе **428 named tests: 425 PASS, 3 FAIL**. `StructuredLogSmoke` и остальные UnifiedError tests — PASS. Проверенные исходники содержат сравнения локализованных `LOCTEXT` сообщений с английскими ожиданиями. Конкретные значения всех провалившихся CHECK не выводятся, поэтому точное различие каждого значения — **NOT RUN**.
+
+Затем RU Editor штатно закрыт. Тот же проект, карта, DX12 и подробный log повторены с единственным дополнительным диагностическим параметром **`-culture=en`**. В журнале подтверждены process overrides language/locale en: **428/428 named tests PASS**, в том числе все три теста из таблицы; **0 automation errors, 0 строк Error:, 0 fatal/GPU совпадений**. Модуль, Engine initialization и DX12/RTX4070 подтверждены; PIE в этом дополнительном EN-запуске — **NOT RUN** (runtime уже проверен в RU). Editor закрыт штатно в03:53:13, тестовые Editor завершены.
+
+Сравнение подтверждает зависимость startup failures от culture в проверенной конфигурации. Это не изменение исходников/установленного движка и не доказательство исправления RU baseline; его **3 FAIL сохраняются в результате**.
+
+Снимки language/culture preferences до и после сравнения охватывают global UE5.8 Saved Config, Common Saved Config и Config/Saved Config временного проекта: **0 сохранённых Culture/Language/Locale/PreviewGameLanguage/AssetGroupCultures keys до и после**, состояние этих предпочтений совпадает. После запуска учтены и вновь созданные INI. Это не утверждение о неизменности всех Editor/cache файлов; raw snapshots остаются локально.
+
+Переносимый повтор сравнения после штатного закрытия предыдущего тестового Editor (карта уже сохранена):
+
+```powershell
+# RU baseline: те же аргументы, но без -culture=en; отдельное имя log.
+& (Join-Path $env:UE_ROOT 'Engine/Binaries/Win64/UnrealEditor.exe') `
+  $env:SMOKE_PROJECT /Game/Smoke -dx12 -log `
+  '-LogCmds=LogAutomationTest Log' -culture=en `
+  "-abslog=$(Join-Path $env:SMOKE_EVIDENCE 'editor-culture-en.log')"
+```
+
+## Итог и оставшиеся ограничения
+
+Для фактически выбранных **UE5.8.4 / VS2022 / MSVC14.44.35229 / SDK10.0.22621.0** создание и чистая сборка нового C++ модуля, Editor, короткие и длительный PIE, reopen и GPU smoke выполнены. Установочные исправления не понадобились; автоматический Zen side effect описан выше. Отдельный дефект/ограничение — 3 RU startup self-tests при успешном EN-сравнении — оставлен для ревью.
+
+**NOT RUN:** независимый тяжёлый GPU stress, общая сертификация стабильности ПК/драйвера, диагностика причин прошлых сбоев, SM6/Lumen/Nanite, сборка самого Engine, cold-cache performance, другие MSVC/platform targets, Unreal IDE integration, полный hash audit MyProject и принятие pin владельцем. GitHub Actions — **NOT RUN**: изменённые docs и Windows scripts не входят в `paths` существующего workflow `repo-checks.yml`; локальный backlog validator выполнен отдельно и прошёл.
+
+Ни main, ни MyProject агентом не редактировались; FOC-002 не начиналась. #53/#7 остаются открытыми, PR #54 остаётся Draft для решения владельца о pin и RU startup errors.
