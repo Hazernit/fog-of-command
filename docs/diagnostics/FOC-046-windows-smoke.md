@@ -21,10 +21,14 @@
 | Windows / CPU / RAM | **26300.9711 / 26H2 Pro**, i9-9900K /16 logical; свежий запрос installed RAM **PASS:64GiB**, usable **63.85GiB** |
 | GPU baseline | RTX4070 / driver **617.42**, query exit0, **50°C /9% /P8 /1220MiB из12282MiB /12.99W** |
 | System baseline до Editor | **07:00:35.992–07:15:35.992**: read PASS,4 события;0 Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008;0 Critical/Error;1 Warning DistributedCOM10016 в07:12:08.159 |
-| Новый clean build | **NOT RUN как завершённая проверка**: запущен в новой временной папке, ожидается native result |
-| Текущие Editor/PIE/GPU runtime | **NOT RUN**, зависят от результата нового build |
+| Новый clean build | **PASS**, native exit **0**, **87.041 с** wall / **84.31 с** UBT /53.54 с UBA |
+| Текущие Editor/PIE/GPU runtime | **NOT RUN как завершённые проверки**, Editor запущен после нового build PASS |
 
-Desktop C++ присутствует, NativeGame workload не зарегистрирован. Текущий UBT compiler/SDK будет записан по новому build log; inventory не доказывает сборку. Baseline DCOM warning предшествует Editor, причинная связь с GPU не установлена. Установки/настройки не менялись, MyProject не открывался; raw evidence остаётся вне Git.
+Desktop C++ присутствует, NativeGame workload и Unreal IDE packages не зарегистрированы. Фактическому CLI build доступных компонентов хватило; недостающих обязательных компонентов этого сценария не выявлено. Baseline DCOM warning предшествует Editor, причинная связь с GPU не установлена. Установки/настройки агентом не менялись, MyProject не открывался; raw evidence остаётся вне Git.
+
+Новый run `FOC046-20261026-071506-7a66942d`: **07:15:06.399–07:16:33.443 +03:00**. Runner создал новый временный проект вне Git из шести текстовых TP_Blank файлов; до сборки `Binaries=false`, `Intermediate=false`, makefile отсутствовал. **Автоматический UBT выбор: VS2022 17.14.42, MSVC14.44.35229, SDK10.0.22621.0**, bundled.NET10.0.203; CompilerVersion не задавался. Выполнены7 compile/link/receipt actions, создан `UnrealEditor-Foc046Smoke.dll`. Результат: `Succeeded`, native exit0. Полная сборка Engine/cold caches — **NOT RUN**, общие caches не очищались.
+
+Команды runner, build, Editor и telemetry в переносимой процедуре ниже применимы к этому новому проекту; значения локальных переменных и raw JSON/логи в Git не включаются.
 
 ## Предыдущий завершённый прогон 2026-10-23
 
