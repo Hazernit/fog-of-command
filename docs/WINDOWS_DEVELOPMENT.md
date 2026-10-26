@@ -31,6 +31,20 @@ The completed 2026-10-26 external Blank C++ smoke used UBT auto-selected VS2022/
 
 ## Troubleshooting boundaries
 
+### Existing FOC-002 project
+
+The repository now includes `FogOfCommand.uproject`, native GameMode and the LFS
+`Content/Maps/Startup.umap`. Follow the [clone/build/Play instructions](../README.md#сборка-и-запуск-windows)
+and [actual FOC-002 results](diagnostics/FOC-002-windows-smoke.md). Use an ASCII
+checkout outside OneDrive: the original Unicode/OneDrive checkout failed to open
+a PCH intermediate file (C1083), while fresh ASCII clones built successfully.
+The exact cause of that location-specific difference has not been isolated.
+Do not copy generated folders or local auto-generated input preferences into Git.
+If Windows displays a firewall permission prompt, the owner handles it manually;
+do not automatically grant network access for this local-only scene.
+
+### Diagnostic boundaries
+
 - If UBT unexpectedly selects MSVC 14.51 or another SDK, stop and diagnose version selection before adding code workarounds. Do not patch engine source or install another IDE/SDK without approval.
 - If a GPU/device crash occurs, stop and capture a sanitized report; do not assume the game code caused the crash.
 - If a project crashes on opening, avoid random cache deletion; first preserve evidence and isolate the broken project state.

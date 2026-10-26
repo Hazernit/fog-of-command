@@ -23,8 +23,10 @@ Git LFS **3.7.0** доступен; `git lfs install --local` выполнен *
 | Валидатор сохранённой карты, отдельный процесс | PASS: native0,11.103с,FOC002_STARTUP_MAP_VALIDATION_PASS |
 | Push/pull бинарной карты через LFS | PASS: upload1/1,новый remote clone/LFS pull/fsck,24300байт/SHA256 совпадает |
 | Сборка полного проекта из нового удалённого git clone без generated folders | PASS: native0/wrapper0,128.271с wall /127.19с UBT,точный compiler/SDK |
-| Editor / стартовая карта / PIE / Stop / повтор / reopen | NOT RUN |
-| Анализ текущих runtime ошибок | NOT RUN |
+| Финальный новый clone после исправления света | PASS: commitd85c648,LFS map26285байт,clean native0/wrapper0,56.043с wall /54.78с UBT |
+| Editor / стартовая карта / три PIE / Esc и Stop | PASS: финальная карта видна,19runtimeactors,3BeginPlay/3teardowns |
+| Штатное закрытие / reopen | NOT RUN как завершённая проверка,повторный Editor запущен |
+| Анализ текущих runtime ошибок | Известные3RUstartupFAIL/17CHECK —#55;другихErrors/fatal/GPUfailure в проверенном final log0 |
 | Приёмка владельцем / merge | NOT RUN |
 
 ## Первая попытка C++ build
@@ -63,6 +65,24 @@ Result: Failed (OtherCompilationError)
 Отдельный validator скачанной LFS-карты: native0,11.115с,markerPASS. После этого Editor запущен **без map override**, только с FogOfCommand.uproject/DX12/log. Startup.umap загрузилась по Config,MapCheck0errors/0warnings,module/D3D12-SM5/RTX4070 подтверждены,initialization39.85с. На первом запуске появилось системное окно Windows Firewall; агент им не управлял. Владелец обработал запрос вручную (сообщил о кнопке Allow/Approve),после чего окно отсутствовало. Выбранные network profiles/правила отдельно **NOT RUN**; никаких изменений firewall/VPN/сети агент не выполнял.
 
 Первый PIE09:00:26.956–09:01:22.219 подтвердил `FOC-002 GameMode BeginPlay: map=UEDPIE_0_Startup, default pawn=DefaultPawn` и штатный Stop. **Визуальная проверка FAIL:** сцена пересвечена,примитивы едва видны. Интенсивность Sun в генераторе уменьшена10000→10; требуется регенерация и повторный UI/PIE. Engine и глобальная экспозиция/локаль не меняются. Editor после первого PIE штатно закрыт09:01:31. Он также создал локальный DefaultInput.ini; автоматически созданные локальные input preferences не переносятся в Git.
+
+## Финальная карта и новый чистый clone
+
+Регенерация только собственной Startup-карты после закрытия Editor: native0,13.116с. Новая карта26285байт запушена через LFS в `d85c648`,SHA256 `8a9a48b6dcfbb9e0b7e6d90cd5fc459745c1cd675aae025fc78c55537ae014b8`. Новый отдельный git clone с GitHub получил именно этот commit/object; LFS pull/fsck PASS,до build Binaries/Intermediate/Saved/DDC отсутствовали.
+
+**09:05:30.503–09:06:26.564 +03:00**: native0/wrapper0,**56.043с wall /54.78с UBT /46.45с UBA**,точные VS2022/MSVC14.44.35229/SDK22621,9actions. В фактическом UBT log0compiler/linker warnings/errors. Затем отдельная проверка скачанной исправленной карты:native0,12.110с,markerPASS. Повторный Editor без map override загрузил Startup по Config,инициализация19.97с,D3D12/SM5/RTX4070. Визуально PIE после изменения света показывает землю,трипримитива,небо/тени; пересвет устранён в этом наблюдении.
+
+![Реальный FogOfCommand PIE из финального удалённого clone](images/FOC-002-pie.jpg)
+
+Финальные три PIE, +03:00, в каждой сессии runtime marker `FOC-002 GameMode BeginPlay: map=UEDPIE_0_Startup, default pawn=DefaultPawn`:
+
+| Цикл | BeginPlay | Stop / world teardown |
+|---|---|---|
+| 1 | 09:09:05.961 | 09:10:41.103 (Esc) |
+| 2 | 09:11:07.587 | 09:12:29.568 (Stop) |
+| 3 | 09:12:40.783 | 09:13:45.240 (Esc) |
+
+UI подтверждает3примитива,землю,свет/тени,19actors вPIE и9actors послеStop. Это выбранный viewport PIE,неSimulate/standalone. Editor штатно закрыт09:14:01–02. Системная/Engine language остаётсяru-RU, `-culture=en` не применялся. Мышь захватывалась viewport; полная проверка всех клавиш управления —NOT RUN (используется штатный DefaultPawn,неRTSкод).
 
 ## Границы проверки
 
