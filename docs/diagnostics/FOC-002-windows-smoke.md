@@ -15,7 +15,7 @@ Git LFS **3.7.0** доступен; `git lfs install --local` выполнен *
 | Проверка | Статус |
 |---|---|
 | Синхронизация main, отдельная ветка, Git LFS | PASS |
-| C++ модуль, GameMode и Config | PASS статически: descriptor/targets/module/GameMode/Config созданы; runtime ещё NOT RUN |
+| C++ модуль, GameMode и Config | PASS:созданы/скомпилированы,GameMode/DefaultPawn подтверждены4runtimeBeginPlay финальной карты |
 | Первая C++ сборка в исходном checkout | FAIL: native6,35.034с wall /32.85с UBT; C1083 открытия PCH, искажённый Unicode path |
 | Чистая C++ сборка нового ASCII clone, код до карты | PASS: native0,wrapper0,109.165с wall /106.38с UBT,9actions |
 | Создание карты, первая попытка | FAIL: commandlet-1,49.172с; недоступный Python SystemLibrary.break_soft_object_path |
@@ -25,7 +25,7 @@ Git LFS **3.7.0** доступен; `git lfs install --local` выполнен *
 | Сборка полного проекта из нового удалённого git clone без generated folders | PASS: native0/wrapper0,128.271с wall /127.19с UBT,точный compiler/SDK |
 | Финальный новый clone после исправления света | PASS: commitd85c648,LFS map26285байт,clean native0/wrapper0,56.043с wall /54.78с UBT |
 | Editor / стартовая карта / три PIE / Esc и Stop | PASS: финальная карта видна,19runtimeactors,3BeginPlay/3teardowns |
-| Штатное закрытие / reopen | NOT RUN как завершённая проверка,повторный Editor запущен |
+| Штатное закрытие / reopen / новый PIE | PASS: initialEditorexit09:14:06.493,reopeninit18.32с,BeginPlay09:15:36.395/Stop09:16:17.561 |
 | Анализ текущих runtime ошибок | Известные3RUstartupFAIL/17CHECK —#55;другихErrors/fatal/GPUfailure в проверенном final log0 |
 | Приёмка владельцем / merge | NOT RUN |
 
@@ -82,7 +82,19 @@ Result: Failed (OtherCompilationError)
 | 2 | 09:11:07.587 | 09:12:29.568 (Stop) |
 | 3 | 09:12:40.783 | 09:13:45.240 (Esc) |
 
-UI подтверждает3примитива,землю,свет/тени,19actors вPIE и9actors послеStop. Это выбранный viewport PIE,неSimulate/standalone. Editor штатно закрыт09:14:01–02. Системная/Engine language остаётсяru-RU, `-culture=en` не применялся. Мышь захватывалась viewport; полная проверка всех клавиш управления —NOT RUN (используется штатный DefaultPawn,неRTSкод).
+UI подтверждает3примитива,землю,свет/тени,19actors вPIE и9actors послеStop. Это выбранный viewport PIE,неSimulate/standalone. Закрытие Editor инициировано09:14:01,фактический Exiting09:14:06.493/logclosed09:14:06.524. Системная/Engine language остаётсяru-RU, `-culture=en` не применялся. Мышь захватывалась viewport; полная проверка всех клавиш управления —NOT RUN (используется штатный DefaultPawn,неRTSкод).
+
+Повторное открытие того же проекта без map override09:14:51:module/Startup/DX12-SM5 загружены,initialization18.32с,MapCheck0errors/0warnings. Новый PIE09:15:36.395–09:16:17.561 подтвердилGameMode/DefaultPawn иштатныйEsc. Editor оставлен открытым **после Stop**, игровой цикл не оставлен работающим.
+
+Итоговая независимая проверка обоих runtime logs на09:17:59:3+1BeginPlay,3+1PIEworld starts и3+1teardowns. В каждом startup428tests:425PASS/3FAIL,17CHECK(7+4+6) только известныхтестов#55. Не-automationErrors,fatal/assert/ensure/device-removed/GPU-crash —0 в проверенных снимках. ИзвестныеRUFAILне исправлены и не скрыты.
+
+## Итог и приёмка
+
+Технические критерии FOC-002 проверены: реальный .uproject/C++GameMode/Config,одна минимальная LFS-карта,новый remote clone безgenerated folders,cleanbuild,default map load,повторныеPIE/Stop/reopen. Исправлены ошибки Python tool API и пересвет карты. Неустранённое ограничение — исходный Unicode/OneDrive checkout с C1083; подтверждённый путь воспроизведения —ASCII clone вне OneDrive. Первопричина этого различия **NOT RUN как отдельная диагностика**. Известные3RUstartupFAIL остаются в#55; их исправление не входит вFOC-002.
+
+В Git сохраняются только source/config/.uproject,Startup.umap черезLFS,map/build scripts,README/инструкции иочищенныйотчёт/снимок. Raw logs,автосохранённыйлокальныйDefaultInput.ini,token-config,Binaries/Intermediate/Saved/DDC не добавлены. Скриншот оригинальный изреальногоPIE,проверенвизуально ипоEXIF/XMP/private strings —личныхданных не найдено.
+
+**NOT RUN:** упаковка/Shipping/standalone executable,сборка Game target внеEditor,полнаясборкаEngine,cold-cache performance,тяжёлыйGPUstress,будущиеигровыесистемы,приёмкавладельцем/merge. GitHub Actions для этих paths **NOT RUN**; локальныйbacklogvalidator,PowerShellparser/guards,PythonAST,actualsaved-mapvalidator,LFSfsck иdiff/privacy review —PASS. Дляпринятияостаётсяревьювладельца иего решениеоmerge;Issue#8/DraftPRне закрываютсяагентом.
 
 ## Границы проверки
 
