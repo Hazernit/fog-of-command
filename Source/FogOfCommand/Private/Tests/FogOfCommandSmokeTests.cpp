@@ -140,7 +140,7 @@ bool FFogOfCommandStartupMapSmokeTest::RunTest(const FString& Parameters)
 		const UStaticMeshComponent* Mesh = It->GetStaticMeshComponent();
 		if (TestNotNull(TEXT("A display actor has a mesh component"), Mesh))
 		{
-			TestNotNull(TEXT("A display mesh has a loaded asset"), Mesh->GetStaticMesh());
+			TestNotNull(TEXT("A display mesh has a loaded asset"), Mesh->GetStaticMesh().Get());
 		}
 		if (It->GetActorLabel() == TEXT("FOC_Floor"))
 		{

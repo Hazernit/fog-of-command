@@ -21,12 +21,30 @@ Branch: `feat/foc-003-tests`.
 | Windows runner syntax / report failure handling | PASS (static/synthetic) | PowerShell parser; 19 report validator cases, including zero/partial/skipped/failed/wrong-suite/malformed-type reports, in Windows PowerShell 5.1 and PowerShell 7 |
 | Local static project validator / Python negative tests | PASS (static/synthetic) | Descriptor/module/targets/maps/LFS contract; 16 Python cases; backlog validator |
 | New project Automation Tests | NOT RUN | Implementation and actual Windows execution pending |
-| New clean Windows C++ build | NOT RUN | Pending new remote clone |
-| Hosted static checks | NOT RUN | Workflow pending |
+| First new clean Windows C++ build | FAIL | Native/wrapper 6, 62.653 s wall / 61.30 s UBT; C2672 in test line 143; selected pinned MSVC/SDK PASS |
+| Corrected clean Windows C++ build | NOT RUN | Pending new remote clone after the TObjectPtr fix |
+| Hosted static checks | PASS | [PR run 40305386137](https://github.com/Hazernit/fog-of-command/actions/runs/40305386137), Ubuntu + Windows; UE NOT RUN |
 | Hosted UE build / Automation | NOT RUN | Hosted runners have no configured licensed UE installation; local Windows gate required |
 | Editor GUI / PIE / GPU rendering | NOT RUN | FOC-003 targets headless Automation; prior FOC-002 observations are not new tests |
 | Owner review / merge | NOT RUN | Draft PR; no automatic merge |
 
 Only reviewed summaries belong here. Raw UBT/Editor logs, JSON reports, command files, generated outputs and private absolute paths stay in a local evidence directory outside Git. MyProject and Unreal Engine source are not changed. FOC-004 is not started.
 
-Reproduction commands and interpretation: [TESTING.md](../TESTING.md). Project tests have not yet run at this stage; synthetic validator tests are not Unreal tests.
+## First actual C++ build and correction
+
+A new remote clone of `0a9ea586d55e7a10259723d9db67dd07e53949b3` downloaded the existing LFS map; pull/fsck and map hash PASS. Before build, Binaries/Intermediate/Saved/DerivedDataCache were all absent. Build ran 13:11:27.178–13:12:29.846 +03:00: native/wrapper **6**, **62.653 s wall / 61.30 s UBT**. UBT selected **Visual Studio 2022 / MSVC 14.44.35229 / Windows SDK 10.0.22621.0**, matching the compiler/SDK pins despite the observed IDE patch drift.
+
+The test failed compilation with **C2672**, not a toolchain or map failure:
+
+```text
+FogOfCommandSmokeTests.cpp(143): error C2672: FAutomationTestBase::TestNotNull: no matching overload
+TestNotNull(..., Mesh->GetStaticMesh());
+Cannot deduce const ValueType* from TObjectPtr<UStaticMesh>.
+Result: Failed (OtherCompilationError)
+```
+
+This excerpt is translated/sanitized. The installed UE header confirms `GetStaticMesh()` returns `TObjectPtr<UStaticMesh>`. Pass `.Get()` to the pointer assertion; no Engine edit. A new clean clone/build is required after this fix; runtime Automation remains **NOT RUN** at this stage. Raw evidence is preserved outside Git; the failed clone is not cleaned/deleted.
+
+Hosted static checks on this commit actually passed on both Ubuntu and Windows, including LFS, project/backlog contracts, 16 Python cases and Windows PowerShell parser/19 synthetic report cases. This does not imply the C++ compilation passed.
+
+Reproduction commands and interpretation: [TESTING.md](../TESTING.md). Synthetic validator tests are not Unreal tests.
