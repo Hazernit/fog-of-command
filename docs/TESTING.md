@@ -68,6 +68,7 @@ $editor = Join-Path $env:UE_ROOT 'Engine/Binaries/Win64/UnrealEditor-Cmd.exe'
 $project = Join-Path $PWD 'FogOfCommand.uproject'
 # Set $report and $localLog to fresh locations outside Git first.
 & $editor $project -unattended -nop4 -nosplash -nullrhi -stdout -FullStdOutLogOutput `
+  '-LogCmds=LogAutomationTest Log' `
   -TestLoops=1 '-ExecCmds=Automation RunTests StartsWith:FogOfCommand.Smoke;Quit' `
   "-ReportExportPath=$report" "-abslog=$localLog"
 ```
@@ -77,6 +78,8 @@ command queue, so it exits after the report is finished with the Automation
 verdict. Do not append an immediate standalone engine Quit or treat a
 `-TestExit` log phrase as a successful test verdict. No `-culture=en` is used.
 The installed UE source was checked for these command/report semantics.
+The process-local LogAutomationTest verbosity preserves named engine startup
+test results for diagnosis; it does not suppress errors or change saved preferences.
 
 Expected tests (EditorContext + EngineFilter, compiled only for editor development
 automation; no additional gameplay subsystem):

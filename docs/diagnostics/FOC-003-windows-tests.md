@@ -21,7 +21,7 @@ Branch: `feat/foc-003-tests`.
 | Windows runner syntax / report failure handling | PASS (static/synthetic) | PowerShell parser; 19 report validator cases, including zero/partial/skipped/failed/wrong-suite/malformed-type reports, in Windows PowerShell 5.1 and PowerShell 7 |
 | Local static project validator / Python negative tests | PASS (static/synthetic) | Descriptor/module/targets/maps/LFS contract; 16 Python cases; backlog validator |
 | First actual project Automation run | Suite PASS, wrapper FAIL | Three exact report tests Success with zero warnings/errors; native exit unavailable to WinPS5 wrapper, so overall FAIL |
-| Corrected command-line runner | NOT RUN | Pending rerun after verified native process-handle fix |
+| Corrected command-line runner | PASS | Native/wrapper 0; all three project tests Success, zero project warnings/errors; 18.212 s wall |
 | First new clean Windows C++ build | FAIL | Native/wrapper 6, 62.653 s wall / 61.30 s UBT; C2672 in test line 143; selected pinned MSVC/SDK PASS |
 | Corrected clean Windows C++ build | PASS | New remote clone 623d543, native/wrapper 0, 63.619 s wall / 62.70 s UBT; no compiler/linker warnings/errors |
 | Hosted static checks | PASS | [PR run 40305386137](https://github.com/Hazernit/fog-of-command/actions/runs/40305386137), Ubuntu + Windows; UE NOT RUN |
@@ -63,3 +63,9 @@ The current VS2022 IDE patch is **17.14.43**; this observation does not rewrite 
 Run **13:15:51.656–13:16:13.083 +03:00**, 21.382 s, loaded the real C++ tests in unattended NullRHI and exported all three exact project tests as Success, with zero project warnings/errors. However, Windows PowerShell 5.1 returned a null process ExitCode after asynchronous Start-Process/redirects/WaitForExit. The wrapper correctly returned **1 / FAIL** rather than interpreting the missing native code as success. This is not a fully passing command-line run; the log's completion marker is not a substitute for a native exit observation.
 
 A small local Windows PowerShell 5.1.26100.9711 probe reproduced the issue using an owned child that delays 500 ms and exits 37: without reading its handle before waiting, ExitCode was null; with its handle cached while alive, ExitCode was 37. The runner now caches the owned handle before the bounded wait. No execution-policy/global settings changed; no log-based exit fallback was introduced. A new real Automation run is required to validate the correction.
+
+## Corrected real command-line run
+
+The acceptance clone fast-forwarded from GitHub to `6c17d6986c1cc89fdc4a5e2873b783a498be290b` (only runner/docs changed after the clean C++ build). **13:19:40.152–13:19:58.409 +03:00:** native **0**, wrapper **0**, fresh report validation **PASS**, **18.212 s wall**, no timeout/launch error. All three exact project tests were Success with zero project warnings/errors. This verifies the actual native exit collection and end-to-end Windows command.
+
+The first two logs use the default AutomationTest category verbosity: 17 AutomationTest error lines are visible, but named startup-result totals are not emitted at that verbosity. Do not derive exact per-test startup counts from an absent summary. The runner now requests process-local `LogAutomationTest Log` so the upcoming controlled negative/restored runs also preserve names/totals; no locale or saved settings change.

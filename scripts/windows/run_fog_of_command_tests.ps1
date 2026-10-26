@@ -72,6 +72,7 @@ New-Item -ItemType Directory -Path $reportDir | Out-Null
 $reportFile = Join-Path $reportDir 'index.json'
 $log = Join-Path $out 'UnrealEditor.log'
 $arguments = @($project, '-unattended', '-nop4', '-nosplash', '-nullrhi', '-stdout', '-FullStdOutLogOutput',
+    '-LogCmds=LogAutomationTest Log',
     '-TestLoops=1', '-ExecCmds=Automation RunTests StartsWith:FogOfCommand.Smoke;Quit',
     "-ReportExportPath=$reportDir", "-abslog=$log")
 Write-Json (Join-Path $out 'command.json') @{ Executable = $editor; Arguments = $arguments }
