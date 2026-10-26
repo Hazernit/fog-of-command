@@ -60,6 +60,10 @@ Result: Failed (OtherCompilationError)
 
 Сборка полного clone **08:52:38.011–08:54:46.299 +03:00**: **native0/wrapper0**, **128.271с wall /127.19с UBT /61.27с UBA**,9actions,UHT4generatedfiles. ToolchainValidationPASS:VS2022/MSVC14.44.35229/SDK10.0.22621.0. Созданы DLL/receipt. Это чистая сборка проектного C++ на установленной binaryUE, не пересборка Engine и не cold-cache измерение.
 
+Отдельный validator скачанной LFS-карты: native0,11.115с,markerPASS. После этого Editor запущен **без map override**, только с FogOfCommand.uproject/DX12/log. Startup.umap загрузилась по Config,MapCheck0errors/0warnings,module/D3D12-SM5/RTX4070 подтверждены,initialization39.85с. На первом запуске появилось системное окно Windows Firewall; агент им не управлял. Владелец обработал запрос вручную (сообщил о кнопке Allow/Approve),после чего окно отсутствовало. Выбранные network profiles/правила отдельно **NOT RUN**; никаких изменений firewall/VPN/сети агент не выполнял.
+
+Первый PIE09:00:26.956–09:01:22.219 подтвердил `FOC-002 GameMode BeginPlay: map=UEDPIE_0_Startup, default pawn=DefaultPawn` и штатный Stop. **Визуальная проверка FAIL:** сцена пересвечена,примитивы едва видны. Интенсивность Sun в генераторе уменьшена10000→10; требуется регенерация и повторный UI/PIE. Engine и глобальная экспозиция/локаль не меняются. Editor после первого PIE штатно закрыт09:01:31. Он также создал локальный DefaultInput.ini; автоматически созданные локальные input preferences не переносятся в Git.
+
 ## Границы проверки
 
 Только минимальный проект и карта FOC-002. RTS, разведка, экономика, multiplayer и FOC-003 не начинаются. MyProject и исходники Engine не редактируются. Системная локаль и глобальные языковые настройки не меняются; известные ru-RU startup self-test failures учитываются отдельно в #55.

@@ -69,7 +69,7 @@ def main():
     sun = spawn(unreal.DirectionalLight, "FOC_Sun", (0.0, 0.0, 500.0), unreal.Rotator(pitch=-35.0, yaw=-35.0, roll=0.0))
     sun_component = sun.get_component_by_class(unreal.DirectionalLightComponent)
     sun_component.set_mobility(unreal.ComponentMobility.MOVABLE)
-    sun_component.set_intensity(10000.0)
+    sun_component.set_intensity(10.0)
     sun_component.set_atmosphere_sun_light(True)
     sky = spawn(unreal.SkyLight, "FOC_SkyLight", (0.0, 0.0, 300.0))
     sky_component = sky.get_component_by_class(unreal.SkyLightComponent)
