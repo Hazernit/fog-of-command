@@ -19,7 +19,8 @@ Git LFS **3.7.0** доступен; `git lfs install --local` выполнен *
 | Первая C++ сборка в исходном checkout | FAIL: native6,35.034с wall /32.85с UBT; C1083 открытия PCH, искажённый Unicode path |
 | Чистая C++ сборка нового ASCII clone, код до карты | PASS: native0,wrapper0,109.165с wall /106.38с UBT,9actions |
 | Создание карты, первая попытка | FAIL: commandlet-1,49.172с; недоступный Python SystemLibrary.break_soft_object_path |
-| Валидатор сохранённой карты | NOT RUN |
+| Создание карты после исправления API | PASS: native0,13.119с,FOC002_STARTUP_MAP_CREATED |
+| Валидатор сохранённой карты, отдельный процесс | PASS: native0,11.103с,FOC002_STARTUP_MAP_VALIDATION_PASS |
 | Push/pull бинарной карты через LFS | NOT RUN |
 | Сборка из нового удалённого git clone без generated folders | NOT RUN |
 | Editor / стартовая карта / PIE / Stop / повтор / reopen | NOT RUN |
@@ -48,6 +49,10 @@ Result: Failed (OtherCompilationError)
 ## Исправление инструмента создания карты
 
 Первый реальный Python commandlet08:41:26–08:42:15 завершился native-1/49.172с: `AttributeError: type object 'SystemLibrary' has no attribute 'break_soft_object_path'`. Это ошибка editor tooling, не успешная генерация карты и не проблема C++ модуля. Проверка C++ UFUNCTION signature не гарантировала Python-export name. Короткие read-only probes внутри этой UE установили поддерживаемый `SoftObjectPath/SoftClassPath.export_text()` и уточнили имена API. Исходники Engine и language settings не менялись; raw probe/log файлы остаются вне Git.
+
+Исправленный creator08:48:33–08:48:46: **native0,13.119с**, marker `FOC002_STARTUP_MAP_CREATED`. Независимый load/validator08:49:34–08:49:45: **native0,11.103с**, marker `FOC002_STARTUP_MAP_VALIDATION_PASS`. Создана одна карта `Content/Maps/Startup.umap` (24300байт):80×80м земля, три Engine Basic Shapes, динамическое освещение/небо/туман, один PlayerStart и native GameMode. Validator проверил сохранённую карту,4меша,коллизии земли Pawn/Visibility,свободный spawn и направление взгляда,default maps/GameMode/DefaultPawn. Это asset check с NullRHI, не визуальный PIE PASS. Python включён только в командлетных процессах, не постоянно в проекте; culture override не задавался.
+
+В рабочем clone Editor автоматически добавил конфигурацию Android File Server с локальным security token. Эта конфигурация не копируется/не добавляется в Git, значение не публикуется. Ненужный для Win64 плагин `AndroidFileServer` явно отключён в .uproject; системные настройки сети/защиты не менялись. В основной checkout переносится только проверенная Startup.umap; ASCII/UTF16 privacy checks карты на личные пути/имя и token-field markers —0совпадений.
 
 ## Границы проверки
 
