@@ -1,6 +1,32 @@
 # FOC-046: Windows Blank C++ smoke
 
-Дата: 2026-10-23, Europe/Moscow. Задачи: [#53](https://github.com/Hazernit/fog-of-command/issues/53), [#7](https://github.com/Hazernit/fog-of-command/issues/7).
+Прогоны: 2026-10-23 и повтор 2026-10-26, Europe/Moscow. Задачи: [#53](https://github.com/Hazernit/fog-of-command/issues/53), [#7](https://github.com/Hazernit/fog-of-command/issues/7).
+
+## Повторная проверка 2026-10-26
+
+По новому запросу владельца заново прочитаны GitHub `AGENTS.md`, `docs/CODEX_WORKFLOW.md`, #53 и состояние Draft PR #54. Инструкции совпадают с рабочей копией; ветка чистая на старте, исходный HEAD `adc55a6`. Используются та же issue-ветка и PR; результаты 23 октября ниже остаются историческим прогоном, а не подменяют текущие тесты.
+
+Свежий inventory в 07:14–07:15 +03:00:
+
+| Проверка | Результат 26 октября |
+|---|---|
+| UE / Launcher manifest / Build.version | **5.8.4 CL58902052**, compatible CL55116800, incomplete=false; версия и CL совпадают с 23 октября |
+| Другие установки | В проверенных Epic manifests и известных install roots более новая версия не найдена; HKLM5.3/4.0 указывают отсутствующие каталоги |
+| Пробел обнаружения | HKCU custom Builds — **NOT RUN: access denied**; полный поиск по всем томам — **NOT RUN** |
+| Engine tools/template | Editor, Editor-Cmd, Build/Clean/RunUAT, UBT, InstalledBuild и TP_Blank C++ source/rules присутствуют |
+| Bundled .NET | **PASS**, SDK10.0.203 / runtime10.0.7 / MSBuild18.3.3 |
+| Visual Studio | Build Tools2019 **16.11.60**, Community2022 **17.14.42**, Community2026 **18.10.4** |
+| MSVC actual / toolset directory | **14.29.30159 / 14.29.30133**, **14.44.35229 / 14.44.35207**, **14.51.36260 / 14.51.36231** |
+| Windows SDK | **10.0.19041.0 / 10.0.22621.0 / 10.0.26100.0**: headers/libs/tools присутствуют |
+| Windows / CPU / RAM | **26300.9711 / 26H2 Pro**, i9-9900K /16 logical; свежий запрос installed RAM **PASS:64GiB**, usable **63.85GiB** |
+| GPU baseline | RTX4070 / driver **617.42**, query exit0, **50°C /9% /P8 /1220MiB из12282MiB /12.99W** |
+| System baseline до Editor | **07:00:35.992–07:15:35.992**: read PASS,4 события;0 Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008;0 Critical/Error;1 Warning DistributedCOM10016 в07:12:08.159 |
+| Новый clean build | **NOT RUN как завершённая проверка**: запущен в новой временной папке, ожидается native result |
+| Текущие Editor/PIE/GPU runtime | **NOT RUN**, зависят от результата нового build |
+
+Desktop C++ присутствует, NativeGame workload не зарегистрирован. Текущий UBT compiler/SDK будет записан по новому build log; inventory не доказывает сборку. Baseline DCOM warning предшествует Editor, причинная связь с GPU не установлена. Установки/настройки не менялись, MyProject не открывался; raw evidence остаётся вне Git.
+
+## Предыдущий завершённый прогон 2026-10-23
 
 Итог реальной проверки Windows: clean C++ build **PASS**, Editor/PIE, включая непрерывные **32мин21.549с** и повторное открытие, **PASS**; GPU smoke в этой сцене **PASS как наблюдение**. Встроенные startup tests при стандартной ru-RU: **425/428 PASS, 3 FAIL**; при процессном `-culture=en`: **428/428 PASS**. Это диагностическое сравнение, а не исправление установленного Engine. Issues остаются открытыми, [PR #54](https://github.com/Hazernit/fog-of-command/pull/54) — Draft. Принятие pin владельцем — **NOT RUN**; движок в main по-прежнему TBD, кандидат PR #52 не равен принятому pin.
 
