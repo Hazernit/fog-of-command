@@ -34,4 +34,18 @@ $report = New-GoodReport; $report.failed = 1
 Assert-Status $report 'FAIL' 'inconsistent counters'
 $report = New-GoodReport; $report.tests[0].PSObject.Properties.Remove('state')
 Assert-Status $report 'FAIL' 'malformed test entry'
-Write-Output 'PASS: 12 Automation report validator cases (synthetic; Unreal NOT RUN).'
+$report = New-GoodReport; $report.succeeded = $true
+Assert-Status $report 'FAIL' 'boolean success counter'
+$report = New-GoodReport; $report.succeeded = @(3, 3)
+Assert-Status $report 'FAIL' 'array success counter'
+$report = New-GoodReport; $report.tests[0].errors = @(0, 0)
+Assert-Status $report 'FAIL' 'array error counter'
+$report = New-GoodReport; $report.succeeded = 3.5
+Assert-Status $report 'FAIL' 'fractional success counter'
+$report = New-GoodReport; $report.tests[0].state = @('Success', 'Success')
+Assert-Status $report 'FAIL' 'array test state'
+$report = New-GoodReport; $report.tests[0].fullTestPath = @('FogOfCommand.Smoke.Configuration')
+Assert-Status $report 'FAIL' 'array test name'
+$report = New-GoodReport; $report.tests = $report.tests[0]
+Assert-Status $report 'FAIL' 'object instead of test array'
+Write-Output 'PASS: 19 Automation report validator cases (synthetic; Unreal NOT RUN).'

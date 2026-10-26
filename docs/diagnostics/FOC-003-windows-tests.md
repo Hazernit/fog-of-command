@@ -18,7 +18,8 @@ Branch: `feat/foc-003-tests`.
 | Check | Status | Evidence |
 |---|---|---|
 | Main synchronization / feature branch / LFS | PASS | Clean tree, fast-forward main, LFS pull/fsck |
-| Windows runner syntax / report failure handling | PASS (static/synthetic) | PowerShell parser; 12 report validator cases, including zero/partial/skipped/failed/wrong-suite reports, in Windows PowerShell 5.1 and PowerShell 7 |
+| Windows runner syntax / report failure handling | PASS (static/synthetic) | PowerShell parser; 19 report validator cases, including zero/partial/skipped/failed/wrong-suite/malformed-type reports, in Windows PowerShell 5.1 and PowerShell 7 |
+| Local static project validator / Python negative tests | PASS (static/synthetic) | Descriptor/module/targets/maps/LFS contract; 16 Python cases; backlog validator |
 | New project Automation Tests | NOT RUN | Implementation and actual Windows execution pending |
 | New clean Windows C++ build | NOT RUN | Pending new remote clone |
 | Hosted static checks | NOT RUN | Workflow pending |

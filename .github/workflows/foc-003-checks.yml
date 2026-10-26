@@ -1,0 +1,76 @@
+name: FOC-003 static project checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-project:
+    name: Static contract (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify downloaded Git LFS objects
+        run: git lfs fsck
+      - name: Static Unreal project and committed LFS contract
+        run: python scripts/validate_project.py
+      - name: Negative tests for static validation
+        run: python -m unittest discover -s scripts/tests -p "test_*.py" -v
+      - name: Validate backlog metadata
+        run: python scripts/validate_backlog.py
+      - name: Parse all PowerShell scripts (no build or Editor launch)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $failures = @()
+          Get-ChildItem -LiteralPath scripts -Recurse -Filter '*.ps1' -File | ForEach-Object {
+            $parseErrors = $null
+            $parseTokens = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$parseTokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count) { $failures += $_.Name }
+          }
+          if ($failures.Count) { throw ('PowerShell parser FAIL: ' + ($failures -join ', ')) }
+          Write-Output 'PowerShell parser PASS; scripts were not executed.'
+      - name: Negative tests for Automation report verdicts (no Unreal)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/tests/test_automation_report.ps1
+      - name: State CI coverage and remaining Windows gate
+        if: always()
+        shell: pwsh
+        env:
+          STATIC_JOB_STATUS: ${{ job.status }}
+        run: |
+          @"
+          ## FOC-003 coverage
+
+          Static job status: $env:STATIC_JOB_STATUS. See individual steps for PASS/FAIL.
+
+          | Check | Hosted CI coverage |
+          |---|---|
+          | Python static project/backlog contracts, negative tests, Git LFS | Run by this job |
+          | PowerShell syntax and report-verdict negative tests | Run on Windows matrix entry |
+          | Unreal C++ build | **NOT RUN** — manual pinned Windows gate |
+          | FogOfCommand.Smoke Automation tests | **NOT RUN** — manual pinned Windows gate |
+          | Editor / PIE / reopen | **NOT RUN** — manual pinned Windows gate |
+
+          A successful static job is not a UE build or runtime PASS. Run the documented
+          Windows build and project Automation workflow with installed UE 5.8.4; attach
+          sanitized evidence to the PR. Known Engine startup failures: #55; nonblocking
+          Unicode/OneDrive/PCH C1083 investigation: #57. This workflow installs no Unreal Engine and uploads no raw logs.
+          "@ | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY

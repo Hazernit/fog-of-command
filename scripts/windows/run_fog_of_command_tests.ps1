@@ -80,16 +80,19 @@ $timer = [Diagnostics.Stopwatch]::StartNew()
 $nativeExitCode = $null
 $timedOut = $false
 $launchError = $null
+$processLaunched = $false
 try {
     $quoted = ($arguments | ForEach-Object { '"' + $_ + '"' }) -join ' '
     $process = Start-Process -FilePath $editor -ArgumentList $quoted -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $out 'stdout.txt') -RedirectStandardError (Join-Path $out 'stderr.txt')
+    $processLaunched = $true
     if (!$process.WaitForExit($TimeoutSeconds * 1000)) {
         $timedOut = $true
         # Only the unattended process created by this invocation is terminated.
         $process.Kill()
+        if (!$process.WaitForExit(10000)) { throw 'Timed-out process did not terminate within the 10-second cleanup limit.' }
     }
-    $process.WaitForExit()
+    $process.Refresh()
     $nativeExitCode = $process.ExitCode
 } catch { $launchError = $_.Exception.Message }
 finally { $timer.Stop() }
@@ -105,8 +108,9 @@ $pass = !$timedOut -and !$launchError -and $null -ne $nativeExitCode -and $nativ
 $result = [ordered]@{
     RunId = $runId; Started = $started.ToString('o'); Finished = [DateTimeOffset]::Now.ToString('o')
     NativeExitCode = $nativeExitCode; WrapperExitCode = $(if ($pass) { 0 } else { 1 })
-    Status = $(if ($pass) { 'PASS' } elseif ($launchError -and $null -eq $nativeExitCode) { 'NOT RUN' } else { 'FAIL' })
-    ElapsedSeconds = [Math]::Round($timer.Elapsed.TotalSeconds, 3); TimedOut = $timedOut; LaunchError = $launchError
+    Status = $(if ($pass) { 'PASS' } elseif (!$processLaunched) { 'NOT RUN' } else { 'FAIL' })
+    ElapsedSeconds = [Math]::Round($timer.Elapsed.TotalSeconds, 3); TimeoutSeconds = $TimeoutSeconds
+    TimedOut = $timedOut; LaunchError = $launchError
     ReportValidation = $verdict; ReportFile = $reportFile; EditorLog = $log; Project = $project; EngineBuild = $version
     Suite = 'FogOfCommand.Smoke'; Mode = 'Unattended NullRHI; no culture override'
     EngineStartupDiagnostics = 'Separate from project suite. Inspect raw log; known ru-RU failures tracked in #55 are not suppressed.'
