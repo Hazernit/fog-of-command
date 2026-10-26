@@ -22,9 +22,11 @@ Branch: `feat/foc-003-tests`.
 | Local static project validator / Python negative tests | PASS (static/synthetic) | Descriptor/module/targets/maps/LFS contract; 16 Python cases; backlog validator |
 | First actual project Automation run | Suite PASS, wrapper FAIL | Three exact report tests Success with zero warnings/errors; native exit unavailable to WinPS5 wrapper, so overall FAIL |
 | Corrected command-line runner | PASS | Native/wrapper 0; all three project tests Success, zero project warnings/errors; 18.212 s wall |
+| Controlled bad-Config negative gate | PASS (expected test FAIL) | Wrong GameDefaultMap: Configuration Fail, other two Success; native 255 / wrapper 1; original Config restored byte-for-byte |
+| Final restored run | PASS | Commit 306c864, native/wrapper 0, 3/3 Success, zero project warnings/errors, 18.476 s wall |
 | First new clean Windows C++ build | FAIL | Native/wrapper 6, 62.653 s wall / 61.30 s UBT; C2672 in test line 143; selected pinned MSVC/SDK PASS |
 | Corrected clean Windows C++ build | PASS | New remote clone 623d543, native/wrapper 0, 63.619 s wall / 62.70 s UBT; no compiler/linker warnings/errors |
-| Hosted static checks | PASS | [PR run 40305386137](https://github.com/Hazernit/fog-of-command/actions/runs/40305386137), Ubuntu + Windows; UE NOT RUN |
+| Hosted static checks | PASS | [PR run 40306728289](https://github.com/Hazernit/fog-of-command/actions/runs/40306728289) on 306c864, Ubuntu + Windows; UE NOT RUN |
 | Hosted UE build / Automation | NOT RUN | Hosted runners have no configured licensed UE installation; local Windows gate required |
 | Editor GUI / PIE / GPU rendering | NOT RUN | FOC-003 targets headless Automation; prior FOC-002 observations are not new tests |
 | Owner review / merge | NOT RUN | Draft PR; no automatic merge |
@@ -69,3 +71,40 @@ A small local Windows PowerShell 5.1.26100.9711 probe reproduced the issue using
 The acceptance clone fast-forwarded from GitHub to `6c17d6986c1cc89fdc4a5e2873b783a498be290b` (only runner/docs changed after the clean C++ build). **13:19:40.152–13:19:58.409 +03:00:** native **0**, wrapper **0**, fresh report validation **PASS**, **18.212 s wall**, no timeout/launch error. All three exact project tests were Success with zero project warnings/errors. This verifies the actual native exit collection and end-to-end Windows command.
 
 The first two logs use the default AutomationTest category verbosity: 17 AutomationTest error lines are visible, but named startup-result totals are not emitted at that verbosity. Do not derive exact per-test startup counts from an absent summary. The runner now requests process-local `LogAutomationTest Log` so the upcoming controlled negative/restored runs also preserve names/totals; no locale or saved settings change.
+
+## Controlled negative gate and restored final run
+
+The same acceptance clone fast-forwarded from GitHub to `306c8643582c3edd29fc54bc0a776dd615a24288`. Source/assets did not change after the clean build. Only in this disposable clone, a local backup preserved the exact original bytes of Config/DefaultEngine.ini. Temporarily change **GameDefaultMap only** from `/Game/Maps/Startup.Startup` to `/Engine/Maps/Entry.Entry`; EditorStartupMap, native module and saved map remain intact. The original Config is restored in a finally block and its SHA256 compared before/after. The negative setting is never committed or copied to the main working checkout.
+
+| Run (+03:00) | Actual project result | Native / wrapper | Wall time |
+|---|---|---|---|
+| Negative: 13:21:43.922–13:22:02.820 | Configuration **Fail** (1 expected assertion), Module/StartupMap Success | **255 / 1** | 18.850 s |
+| Restored: 13:22:03.620–13:22:22.153 | All three **Success**, 0 project errors/warnings/skipped/in-progress | **0 / 0** | 18.476 s |
+
+Thus the actual Unreal test, Automation exit verdict and wrapper reject a broken configuration, then pass after restoration; this is not only a synthetic report-parser check.
+
+Final fresh `index.json` contains exactly:
+
+| Full test name | State | Test duration | Errors / warnings |
+|---|---|---|---|
+| FogOfCommand.Smoke.Configuration | Success | 0.007561 s | 0 / 0 |
+| FogOfCommand.Smoke.Module | Success | 0.007948 s | 0 / 0 |
+| FogOfCommand.Smoke.StartupMap | Success | 0.151046 s | 0 / 0 |
+
+Report counters: succeeded **3**, succeededWithWarnings/failed/notRun/inProcess **0**; total test duration **0.166555 s**. The 18.476 s process wall time includes Editor startup/discovery/reporting. NullRHI is confirmed; these are real C++ Editor Automation/asset checks, not rendering or PIE.
+
+After restoration and execution, tracked Source/Config/Content have no diff and the Startup map SHA256 is unchanged. Editor created **untracked Config/DefaultInput.ini** in the disposable clone; it is left local, not copied, staged or published. This generated file is not evidence that the entire working tree is clean; only tracked project files are unchanged.
+
+## Startup diagnostics remain separate (#55)
+
+The final negative/restored runs with process-local test logging each emitted **428 named Engine startup results: 425 successful, 3 failed**. The failures are exactly the known `FUnifiedErrorTest_CreateErrorMessage`, `FUnifiedErrorTest_CreateErrorMessageWithContext`, and `FStructuredLogFormatTest`, with **7 + 4 + 6 = 17 CHECK/error lines**. No culture override, global locale change or error suppression was used; #55 is not fixed.
+
+The restored positive log contains those 17 AutomationTest Error lines and **0 other Error lines**. The intentional negative log additionally contains two AutomationController error lines for its expected project failure. Neither log contains a detected fatal/assert/ensure/device-removed/GPU-crash marker. Two non-project warnings are visible: AssetRegistry's file journal is unavailable on the engine volume (uncached discovery), and LayoutService reports an older layout key. These warnings were not repaired; the full startup log is not claimed warning/error-free. Each final project report still has zero project warnings, and the positive report zero project errors.
+
+## CI and remaining boundaries
+
+Actual hosted PR CI for `306c864` passed on Ubuntu and Windows: [run 40306728289](https://github.com/Hazernit/fog-of-command/actions/runs/40306728289). LFS object verification, static descriptor/module/targets/maps checks, 16 Python regression cases and backlog checks passed on both; PowerShell syntax/19 synthetic report cases passed on Windows. Linux correctly skips the Windows-only steps. The summary explicitly states hosted **Unreal build / Automation / Editor-PIE: NOT RUN**; it installs no UE and uploads no raw logs.
+
+Hosted CI annotations warn about the Node20 runtime of checkout@v4/setup-python@v5 (GitHub forces Node24), plus an Ubuntu runner migration notice. These are CI-platform warnings, not UE results; action-runtime migration is not claimed as tested/fixed here.
+
+**NOT RUN:** GUI Editor/PIE/reopen/input/GPU rendering or stress for this issue; standalone/Game target/Shipping/packaging; Engine rebuild; cold-cache benchmark; live timeout-kill integration (bounded code path reviewed, synthetic failure cases run); original Unicode/OneDrive cause isolation (#57); owner review/merge. FOC-004 is not started. The Windows CLI/config/module/saved-map tests and clean project build are the actual scope proved above.
