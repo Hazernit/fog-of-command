@@ -21,8 +21,8 @@ Git LFS **3.7.0** доступен; `git lfs install --local` выполнен *
 | Создание карты, первая попытка | FAIL: commandlet-1,49.172с; недоступный Python SystemLibrary.break_soft_object_path |
 | Создание карты после исправления API | PASS: native0,13.119с,FOC002_STARTUP_MAP_CREATED |
 | Валидатор сохранённой карты, отдельный процесс | PASS: native0,11.103с,FOC002_STARTUP_MAP_VALIDATION_PASS |
-| Push/pull бинарной карты через LFS | NOT RUN |
-| Сборка из нового удалённого git clone без generated folders | NOT RUN |
+| Push/pull бинарной карты через LFS | PASS: upload1/1,новый remote clone/LFS pull/fsck,24300байт/SHA256 совпадает |
+| Сборка полного проекта из нового удалённого git clone без generated folders | PASS: native0/wrapper0,128.271с wall /127.19с UBT,точный compiler/SDK |
 | Editor / стартовая карта / PIE / Stop / повтор / reopen | NOT RUN |
 | Анализ текущих runtime ошибок | NOT RUN |
 | Приёмка владельцем / merge | NOT RUN |
@@ -53,6 +53,12 @@ Result: Failed (OtherCompilationError)
 Исправленный creator08:48:33–08:48:46: **native0,13.119с**, marker `FOC002_STARTUP_MAP_CREATED`. Независимый load/validator08:49:34–08:49:45: **native0,11.103с**, marker `FOC002_STARTUP_MAP_VALIDATION_PASS`. Создана одна карта `Content/Maps/Startup.umap` (24300байт):80×80м земля, три Engine Basic Shapes, динамическое освещение/небо/туман, один PlayerStart и native GameMode. Validator проверил сохранённую карту,4меша,коллизии земли Pawn/Visibility,свободный spawn и направление взгляда,default maps/GameMode/DefaultPawn. Это asset check с NullRHI, не визуальный PIE PASS. Python включён только в командлетных процессах, не постоянно в проекте; culture override не задавался.
 
 В рабочем clone Editor автоматически добавил конфигурацию Android File Server с локальным security token. Эта конфигурация не копируется/не добавляется в Git, значение не публикуется. Ненужный для Win64 плагин `AndroidFileServer` явно отключён в .uproject; системные настройки сети/защиты не менялись. В основной checkout переносится только проверенная Startup.umap; ASCII/UTF16 privacy checks карты на личные пути/имя и token-field markers —0совпадений.
+
+## Полный чистый clone с LFS-картой
+
+Карта запушена через Git LFS в commit `5157f5f`: upload1/1. Второй **новый удалённый git clone с GitHub**, `git lfs pull` и `git lfs fsck` —PASS. До первой сборки в нём **Binaries=false,Intermediate=false,Saved=false,DerivedDataCache=false**. Полученная карта24300байт имеет SHA256 `5ad91881b385962873b2e9277880e510e21a63202fe74321ee726fa475a96f7b`, совпадает с проверенным исходным ассетом и LFS pointer; проектные файлы не переносились вручную.
+
+Сборка полного clone **08:52:38.011–08:54:46.299 +03:00**: **native0/wrapper0**, **128.271с wall /127.19с UBT /61.27с UBA**,9actions,UHT4generatedfiles. ToolchainValidationPASS:VS2022/MSVC14.44.35229/SDK10.0.22621.0. Созданы DLL/receipt. Это чистая сборка проектного C++ на установленной binaryUE, не пересборка Engine и не cold-cache измерение.
 
 ## Границы проверки
 
