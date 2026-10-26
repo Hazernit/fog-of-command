@@ -12,7 +12,8 @@
 |---|---|
 | UE / Launcher manifest / Build.version | **5.8.4 CL58902052**, compatible CL55116800, incomplete=false; версия и CL совпадают с 23 октября |
 | Другие установки | В проверенных Epic manifests и известных install roots более новая версия не найдена; HKLM5.3/4.0 указывают отсутствующие каталоги |
-| Пробел обнаружения | HKCU custom Builds — **NOT RUN: access denied**; полный поиск по всем томам — **NOT RUN** |
+| Пользовательские custom builds | **PASS**, в07:26:17 обычным пользователем вне sandbox проверено отсутствие HKCU custom Builds key; первоначальный sandbox access denied уточнён |
+| Пробел обнаружения | Полный поиск по всем томам — **NOT RUN**; вывод ограничен проверенными manifests, registry и известными install roots |
 | Engine tools/template | Editor, Editor-Cmd, Build/Clean/RunUAT, UBT, InstalledBuild и TP_Blank C++ source/rules присутствуют |
 | Bundled .NET | **PASS**, SDK10.0.203 / runtime10.0.7 / MSBuild18.3.3 |
 | Visual Studio | Build Tools2019 **16.11.60**, Community2022 **17.14.42**, Community2026 **18.10.4** |
@@ -45,6 +46,8 @@ Editor26.10 загрузил новый `UnrealEditor-Foc046Smoke.dll`, иниц
 Отдельный непрерывный PIE начат **07:21:01.213**, UI snapshot07:21:34 показывает активный PIE/18actors. Read-only GPU collector запущен после старта игры на1800с; сам exit0 collector не будет засчитан как доказательство PIE.
 
 `nvidia-smi` измеряет весь GPU. Пользовательские приложения не закрывались, их фоновая нагрузка не контролируется; всю загрузку адаптера приписывать Editor нельзя. Это периодические аппаратные измерения плюс выборочные UI-наблюдения, не непрерывная видеозапись и не независимый stress test.
+
+Checkpoint **07:26:18 +03:00**: UI в07:25:42 подтверждает активный PIE и обновившееся небо; log содержит4world starts/3teardowns, последний PIE продолжается. **31 проба**, последняя elapsed303.644с: GPU45°C/39%, EditorResponding=true;0query/process-access/nonresponding errors,0новыхfatal/GPU совпадений. Это промежуточное наблюдение, не завершённый30min PASS.
 
 ![26 октября: начало непрерывного PIE, оригинальный снимок](images/FOC-046-20261026-pie-start.jpg)
 
