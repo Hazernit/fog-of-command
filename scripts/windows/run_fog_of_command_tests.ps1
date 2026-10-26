@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Runs FogOfCommand Smoke and UnitState Automation Tests in installed UE 5.8.4.
+Runs FogOfCommand Smoke, UnitState and Orders tests in installed UE 5.8.4.
 .DESCRIPTION
 Build FogOfCommandEditor first. This is unattended NullRHI asset/config/module
 validation, not GUI/PIE, rendering, packaging or an Engine build. No locale override.
@@ -8,8 +8,8 @@ Every run uses a new external evidence directory; raw logs/reports may contain
 private paths and must not be committed/uploaded. No output/cache deletion.
 An exit code of zero alone never passes: require the complete successful suite
 in a freshly exported index.json. Warnings fail the project suite as well.
-The default All suite requires all nine tests. Optional Smoke/UnitState subsets
-require their exact three/six tests and cannot replace the combined gate.
+The default All suite requires all 17 tests. Optional Smoke/UnitState/Orders
+subsets require their exact three/six/eight tests and cannot replace the combined gate.
 #>
 [CmdletBinding()]
 param(
@@ -17,7 +17,7 @@ param(
     [string]$ProjectRoot = (Join-Path $PSScriptRoot '..\..'),
     [Parameter(Mandatory = $true)][string]$EvidenceRoot,
     [ValidateRange(30, 3600)][int]$TimeoutSeconds = 600,
-    [ValidateSet('All', 'Smoke', 'UnitState')][string]$Suite = 'All'
+    [ValidateSet('All', 'Smoke', 'UnitState', 'Orders')][string]$Suite = 'All'
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -78,6 +78,7 @@ $expectedTests = @(Get-FocExpectedTests -Suite $Suite)
 $testPrefix = switch ($Suite) {
     'Smoke' { 'FogOfCommand.Smoke.' }
     'UnitState' { 'FogOfCommand.UnitState.' }
+    'Orders' { 'FogOfCommand.Orders.' }
     'All' { 'FogOfCommand.' }
 }
 $arguments = @($project, '-unattended', '-nop4', '-nosplash', '-nullrhi', '-stdout', '-FullStdOutLogOutput',

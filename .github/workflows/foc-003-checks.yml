@@ -66,7 +66,7 @@ jobs:
           | Python static project/backlog contracts, negative tests, Git LFS | Run by this job |
           | PowerShell syntax and report-verdict negative tests | Run on Windows matrix entry |
           | Unreal C++ build | **NOT RUN** — manual pinned Windows gate |
-          | FogOfCommand Smoke + UnitState Automation tests | **NOT RUN** — manual pinned Windows gate |
+          | FogOfCommand Smoke + UnitState + Orders Automation tests | **NOT RUN** — manual pinned Windows gate |
           | Editor / PIE / reopen | **NOT RUN** — manual pinned Windows gate |
 
           A successful static job is not a UE build or runtime PASS. Run the documented
