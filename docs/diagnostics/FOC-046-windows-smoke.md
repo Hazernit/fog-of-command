@@ -22,13 +22,33 @@
 | GPU baseline | RTX4070 / driver **617.42**, query exit0, **50°C /9% /P8 /1220MiB из12282MiB /12.99W** |
 | System baseline до Editor | **07:00:35.992–07:15:35.992**: read PASS,4 события;0 Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008;0 Critical/Error;1 Warning DistributedCOM10016 в07:12:08.159 |
 | Новый clean build | **PASS**, native exit **0**, **87.041 с** wall / **84.31 с** UBT /53.54 с UBA |
-| Текущие Editor/PIE/GPU runtime | **NOT RUN как завершённые проверки**, Editor запущен после нового build PASS |
+| Editor / module / RHI | **PASS функционально**, initialization **63.20 с**, D3D12/SM5, RTX4070, driver617.42 |
+| Три коротких PIE | **PASS**, Selected Viewport, сохранённая `/Game/Smoke`, UI+world start/teardown |
+| Startup tests ru-RU | **FAIL:425/428 PASS,3 FAIL,17CHECK errors**, те же три named tests, что 23 октября |
+| Непрерывный PIE / GPU telemetry | **NOT RUN как завершённые проверки**, начаты07:21, ожидается полный30минутный интервал |
+| Reopen / EN process comparison | **NOT RUN**, ожидают завершения длительного PIE |
 
 Desktop C++ присутствует, NativeGame workload и Unreal IDE packages не зарегистрированы. Фактическому CLI build доступных компонентов хватило; недостающих обязательных компонентов этого сценария не выявлено. Baseline DCOM warning предшествует Editor, причинная связь с GPU не установлена. Установки/настройки агентом не менялись, MyProject не открывался; raw evidence остаётся вне Git.
 
 Новый run `FOC046-20261026-071506-7a66942d`: **07:15:06.399–07:16:33.443 +03:00**. Runner создал новый временный проект вне Git из шести текстовых TP_Blank файлов; до сборки `Binaries=false`, `Intermediate=false`, makefile отсутствовал. **Автоматический UBT выбор: VS2022 17.14.42, MSVC14.44.35229, SDK10.0.22621.0**, bundled.NET10.0.203; CompilerVersion не задавался. Выполнены7 compile/link/receipt actions, создан `UnrealEditor-Foc046Smoke.dll`. Результат: `Succeeded`, native exit0. Полная сборка Engine/cold caches — **NOT RUN**, общие caches не очищались.
 
 Команды runner, build, Editor и telemetry в переносимой процедуре ниже применимы к этому новому проекту; значения локальных переменных и raw JSON/логи в Git не включаются.
+
+Editor26.10 загрузил новый `UnrealEditor-Foc046Smoke.dll`, инициализация завершена **07:18:13.224**. Через Windows UI создан Basic level и сохранён `/Game/Smoke` только в новом временном проекте; shader preparation завершена перед PIE. Три коротких Play/Stop по runtime log, +03:00:
+
+| Цикл | Play | Stop |
+|---|---|---|
+| 1 | 07:20:00.250 | 07:20:15.473 |
+| 2 | 07:20:19.956 | 07:20:32.333 |
+| 3 | 07:20:37.264 | 07:20:53.934 |
+
+Отдельный непрерывный PIE начат **07:21:01.213**, UI snapshot07:21:34 показывает активный PIE/18actors. Read-only GPU collector запущен после старта игры на1800с; сам exit0 collector не будет засчитан как доказательство PIE.
+
+![26 октября: начало непрерывного PIE, оригинальный снимок](images/FOC-046-20261026-pie-start.jpg)
+
+Подробный текущий RU log подтверждает425PASS/3FAIL: `FUnifiedErrorTest_CreateErrorMessage`7CHECK, `FUnifiedErrorTest_CreateErrorMessageWithContext`4CHECK, `FStructuredLogFormatTest`6CHECK. В прочитанном startup-снимке0fatal/assert/ensure/device-removed/GPU-crash совпадений;17 ошибок уровня Error относятся к startup automation. Отдельное Warning DirectoryWatcher об отсутствовавшем Content нового проекта не является GPU-сбоем.
+
+Автоматические действия Editor26.10: уже установленный bundled Zen признан актуальным, запущен локальный ZenServer; журнал также сообщает обновление несовместимого layout key. Поэтому неизменность вообще всех глобальных Editor/cache files не заявляется. Агент установщики, исходники движка, driver/BIOS/сеть/защиту не менял.
 
 ## Предыдущий завершённый прогон 2026-10-23
 
