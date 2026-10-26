@@ -18,7 +18,8 @@ Git LFS **3.7.0** доступен; `git lfs install --local` выполнен *
 | C++ модуль, GameMode и Config | PASS статически: descriptor/targets/module/GameMode/Config созданы; runtime ещё NOT RUN |
 | Первая C++ сборка в исходном checkout | FAIL: native6,35.034с wall /32.85с UBT; C1083 открытия PCH, искажённый Unicode path |
 | Чистая C++ сборка нового ASCII clone, код до карты | PASS: native0,wrapper0,109.165с wall /106.38с UBT,9actions |
-| Создание и проверка стартовой карты | NOT RUN |
+| Создание карты, первая попытка | FAIL: commandlet-1,49.172с; недоступный Python SystemLibrary.break_soft_object_path |
+| Валидатор сохранённой карты | NOT RUN |
 | Push/pull бинарной карты через LFS | NOT RUN |
 | Сборка из нового удалённого git clone без generated folders | NOT RUN |
 | Editor / стартовая карта / PIE / Stop / повтор / reopen | NOT RUN |
@@ -43,6 +44,10 @@ Result: Failed (OtherCompilationError)
 Реальный `git clone --single-branch --branch feat/foc-002-unreal-project` с GitHub получил commit `57c0fc6`. В новом checkout до build Binaries=false/Intermediate=false. **08:38:47.522–08:40:36.706 +03:00**, native0/wrapper0, **109.165с wall /106.38с UBT /59.91с UBA**. UHT создал4generatedfiles, выполнены9actions, DLL и target receipt созданы. ToolchainValidation PASS: **VS2022/MSVC14.44.35229/SDK10.0.22621.0**. C++ модуль и GameMode скомпилированы; карта в этом commit ещё не добавлена. Полный clone с картой и его runtime будут отдельной проверкой.
 
 Это подтверждает рабочую сборку в выбранном ASCII checkout вне OneDrive; исходная причина C1083 в другой копии не изолирована. Для воспроизведения используется ASCII-путь. Общие Engine/UBA/DDC caches не очищались, cold-cache benchmark и полная сборка Engine — NOT RUN.
+
+## Исправление инструмента создания карты
+
+Первый реальный Python commandlet08:41:26–08:42:15 завершился native-1/49.172с: `AttributeError: type object 'SystemLibrary' has no attribute 'break_soft_object_path'`. Это ошибка editor tooling, не успешная генерация карты и не проблема C++ модуля. Проверка C++ UFUNCTION signature не гарантировала Python-export name. Короткие read-only probes внутри этой UE установили поддерживаемый `SoftObjectPath/SoftClassPath.export_text()` и уточнили имена API. Исходники Engine и language settings не менялись; raw probe/log файлы остаются вне Git.
 
 ## Границы проверки
 

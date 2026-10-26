@@ -51,7 +51,9 @@ failures (#55) instead of changing global language settings to hide them.
 Keep raw commandlet logs outside Git and review sanitized excerpts before publishing.
 Git LFS must be applied before adding the generated `.umap` to a commit.
 
-API/CLI signatures were checked against the installed UE 5.8.4 source:
+The candidate C++ signatures and CLI parser were inspected in the installed
+UE 5.8.4 source. C++ reflection metadata alone does not prove a method is exposed
+under the same Python name; confirm Python calls in the actual commandlet:
 
 - `PythonScriptCommandlet.cpp`: parses `-Script=`, runs it unattended, returns
   nonzero when Python raises; `PythonScriptPlugin.cpp` supplies script `sys.argv`.
@@ -60,10 +62,18 @@ API/CLI signatures were checked against the installed UE 5.8.4 source:
   `SaveCurrentLevel`; `EditorActorSubsystem.h`: actor enumeration/spawn/destruction.
 - `World.h`, `WorldSettings.h`, `Level.h`, `GameMapsSettings.h`: world settings,
   nonpartitioned/internal packaging and default map/GameMode properties.
-- `KismetSystemLibrary.h`: soft-object/class-path string conversion; component
-  headers provide mesh, collision, mobility and dynamic-light functions.
+- Component headers provide candidate mesh, collision, mobility and dynamic-light
+  signatures. Actual Python names were then checked in a read-only commandlet.
 - `PyGenUtil.cpp`: reflected method/property/enum Python names; `PyCore.cpp`
   provides `load_class`, `load_asset`, and `get_default_object`.
 
-Source/signature verification and Python syntax checks do not constitute a real
-Unreal execution. Record actual commandlet/PIE results separately in the FOC-002 PR.
+Read-only UE commandlet probes confirmed that `SoftObjectPath.export_text()` and
+`SoftClassPath.export_text()` return the canonical map/class paths. They also
+confirmed `CollisionChannel.ECC_PAWN` / `ECC_VISIBILITY` and the distinct enum
+`CollisionResponseType.ECR_BLOCK`, including an actual component response.
+`CollisionResponse` is a different Python type and must not be used for that enum.
+The probes confirmed current-level/external-actor/world-settings access, the
+DefaultPawn collision component and the dynamic-light methods used here.
+
+Those probes and Python syntax checks do not constitute generated-map validation
+or PIE acceptance. Record the actual creator/validator/PIE results in the FOC-002 PR.

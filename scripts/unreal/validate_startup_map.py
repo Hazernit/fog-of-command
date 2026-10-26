@@ -50,9 +50,9 @@ def validate_project_settings():
     require(game_mode is not None, "Build the FogOfCommand C++ module first: GameMode class missing")
     settings = unreal.get_default_object(unreal.GameMapsSettings)
     for property_name in ("editor_startup_map", "game_default_map"):
-        path = unreal.SystemLibrary.break_soft_object_path(settings.get_editor_property(property_name))
+        path = settings.get_editor_property(property_name).export_text()
         require(path == MAP_OBJECT, property_name + " must resolve to " + MAP_OBJECT)
-    global_mode = unreal.SystemLibrary.break_soft_class_path(settings.get_editor_property("global_default_game_mode"))
+    global_mode = settings.get_editor_property("global_default_game_mode").export_text()
     require(global_mode == GAME_MODE, "GlobalDefaultGameMode must be the native FogOfCommand GameMode")
     mode_defaults = unreal.get_default_object(game_mode)
     pawn_class = mode_defaults.get_editor_property("default_pawn_class")
@@ -105,8 +105,8 @@ def validate_current_map():
 
     floor = actor_with_label("FOC_Floor", unreal.StaticMeshActor)
     floor_component = floor.get_component_by_class(unreal.StaticMeshComponent)
-    require(floor_component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_PAWN) == unreal.CollisionResponse.ECR_BLOCK, "Floor must block the Pawn collision channel")
-    require(floor_component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_VISIBILITY) == unreal.CollisionResponse.ECR_BLOCK, "Floor must block Visibility queries")
+    require(floor_component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_PAWN) == unreal.CollisionResponseType.ECR_BLOCK, "Floor must block the Pawn collision channel")
+    require(floor_component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_VISIBILITY) == unreal.CollisionResponseType.ECR_BLOCK, "Floor must block Visibility queries")
     floor_origin, floor_extent = floor.get_actor_bounds(True)
     require_vector(floor_extent, (4000.0, 4000.0, 50.0), "Floor collision bounds", tolerance=1.0)
     floor_top = floor_origin.z + floor_extent.z
