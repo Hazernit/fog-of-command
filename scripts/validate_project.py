@@ -22,6 +22,8 @@ DOMAIN_FILES = (
     "Source/FogOfCommand/Public/Domain/UnitState.h",
     "Source/FogOfCommand/Private/Domain/UnitIdentifiers.cpp",
     "Source/FogOfCommand/Private/Domain/UnitState.cpp",
+    "Source/FogOfCommand/Public/Domain/Orders.h",
+    "Source/FogOfCommand/Private/Domain/Orders.cpp",
 )
 REQUIRED_FILES = (
     "FogOfCommand.uproject", "Config/DefaultEngine.ini", "Config/DefaultGame.ini",

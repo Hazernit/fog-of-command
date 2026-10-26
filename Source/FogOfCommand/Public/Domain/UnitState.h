@@ -31,7 +31,8 @@ enum class EUnitStateResult : uint8
 	InvalidAmount,
 	InsufficientAmmunition,
 	UnsupportedVersion,
-	MalformedSnapshot
+	MalformedSnapshot,
+	OrderConflict
 };
 
 /** Mutable import/export value. Only validated copies can enter FUnitState. */
@@ -88,6 +89,14 @@ public:
 	EUnitStateResult ConsumeAmmunition(int32 Amount);
 	/** Terminal and idempotent: retain ID/side/position/ammo, zero health, clear opaque order. */
 	EUnitStateResult Destroy();
+	/**
+	 * Validate identity and replace the opaque link only if it still equals Expected.
+	 * Expected/Desired may be empty, but set IDs must be valid. Requires a living unit;
+	 * a mismatch or invalid input leaves all unit data unchanged. This stores identity
+	 * metadata only; order ownership and lifecycle belong to FUnitOrders.
+	 */
+	EUnitStateResult CompareExchangeCurrentOrderId(const FUnitId& ExpectedUnitId,
+		const TOptional<FOrderId>& Expected, const TOptional<FOrderId>& Desired);
 
 	/**
 	 * Encode valid initialized state. Failure leaves OutBytes unchanged.

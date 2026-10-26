@@ -17,9 +17,10 @@ Use a new ASCII checkout outside OneDrive and external local evidence. Known Eng
 | Check | Status | Evidence |
 |---|---|---|
 | Main / dependency / branch / LFS | PASS | FOC-004 merged, clean tree, separate feature branch, pull/fsck |
-| Orders / UnitState API implementation | NOT RUN | Development in progress |
+| Orders / UnitState API implementation | Implemented; runtime NOT RUN | Core-only owner/history/lifecycle and narrow CAS; old UnitState v1 format unchanged |
 | Combined report validator / parser | PASS (synthetic/static) | 65 cases in Windows PowerShell 5.1 and PowerShell 7; All requires 9 old + 8 new tests |
-| Local static checks / hosted CI | NOT RUN | Pending implementation |
+| Local static checks | PASS | Project/LFS/domain boundary, 21 Python regression cases, 65 PowerShell report cases, parser/backlog/diff/privacy |
+| Hosted static CI | Runner-stage PASS | [40319117205](https://github.com/Hazernit/fog-of-command/actions/runs/40319117205); full implementation pending push |
 | New clean Windows C++ build | NOT RUN | Pending new remote clone |
 | All old/new Unreal Automation Tests | NOT RUN | Pending compiled implementation |
 | Hosted UE build / Automation | NOT RUN | Hosted runner has no UE; actual Windows manual gate required |
@@ -27,3 +28,13 @@ Use a new ASCII checkout outside OneDrive and external local evidence. Known Eng
 | Owner review / merge | NOT RUN | Draft PR; no automatic merge |
 
 Contract: [ORDERS.md](../ORDERS.md). Commands: [TESTING.md](../TESTING.md). Only sanitized summaries go into Git. Raw logs/JSON/commands, private paths and generated caches remain local outside Git. MyProject/Engine source are unchanged, installations are not run, and neighboring Issues are not started.
+
+## Implementation and publication
+
+Orders.h/.cpp define MOVE/HOLD intent, lifecycle and explicit results/reasons. A noncopyable single-unit owner holds a private UnitState and per-unit terminal history. Only const unit/order views escape. New order IDs cannot replace an active order implicitly; explicit Replace validates the old link, new intent and time before either record/link changes. UnitState gets only a validated expected-identity/expected-link CAS, without mutable snapshots or changes to health/resources/position/identity.
+
+DestroyUnit and lethal ApplyDamage prevalidate arguments/time and cancel the active order with UnitDestroyed while creating the unit tombstone. No-op request/outcome retries preserve timestamps and do not advance the clock. Existing terminal callbacks cannot clear a later active order. Scalar finite target checks precede copying invalid FVector input; TMap record pointers are not reused after Add can reallocate storage. Core include paths were checked against the actual installed UE headers.
+
+Eight new Orders Automation groups include full unit/history/clock comparisons after rejection and eight concise Checked-invariants info markers. New static required-file/dependency checks also cover Orders.h/.cpp. These remain implementation/coverage claims until actual Windows compilation and test execution below.
+
+The GitHub connector transport became unavailable during early PR publication. Git push still worked; the PR was created/verified using Windows HTTPS and the existing Git Credential Manager authentication, without displaying/persisting credential values or changing connection settings. Draft PR [#60](https://github.com/Hazernit/fog-of-command/pull/60) is attached; publication helper/HTTP raw data stay outside Git.

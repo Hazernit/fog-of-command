@@ -26,11 +26,19 @@ Orders describe intent and lifecycle in Core-only data. No Actor, controller, Ti
 
 Only one Pending or Executing order can be active for the unit. Order history retains terminal IDs/intents for duplicate detection during the owner's lifetime; it is not an execution queue or a global unit/order registry. The same ID with changed intent is a conflict. Stale cancellation/replacement must never clear a newer CurrentOrderId. Replacement first validates the new intent, expected previous ID and time; failures preserve the old order and link.
 
+`Complete` records an external executor's outcome; it does not move the unit or prove a MOVE target has been reached. `Fail` records explicit ExecutionFailed, while invalid arguments return an operation error without creating/changing an order. Public cancellation accepts CancelledByRequest; Replaced and UnitDestroyed are reserved for their coordinated operations. Terminal history is retained without eviction and validation scans that history; large-scale performance and retention policy are not claimed.
+
 ## UnitState boundary and destruction
 
 UnitState gets only a narrow validated current-order compare/exchange API: expected UnitId, expected current optional OrderId and desired optional OrderId. It checks identity, valid IDs, lifecycle and the expected link. It exposes no mutable snapshot or general state setter. Health, ammunition, side, position and identity remain unaffected by order assignment/removal; its existing v1 value format is retained.
 
 The order owner exposes no mutable UnitState, so coordinated destruction/damage can validate time/inputs first, cancel the active record and destroy the unit together. Existing standalone UnitState destruction still clears its opaque link; callers that need order-record consistency must use the coordinating owner. There is no callback/event bus or automatic Tick reconciliation.
+
+## API boundary
+
+`Domain/Orders.h`, namespace `FogOfCommand::Domain`, defines FOrderRequest, FOrderSnapshot and the noncopyable/nonassignable FUnitOrders owner. Initialize takes a valid unit snapshot without an orphan CurrentOrderId. Submit creates Pending only when there is no active order; Replace requires the expected current ID. Start/Complete/Cancel/Fail address explicit UnitId/OrderId and time. DestroyUnit/ApplyDamage coordinate health/death with the active record. GetUnit/GetHistory/FindOrder expose only const values; a borrowed FindOrder pointer must not be retained across commands that can grow the history map.
+
+UnitState's API is `CompareExchangeCurrentOrderId(ExpectedUnitId, Expected, Desired)`, with optional expected/desired IDs. It requires a living initialized unit, validates the expected identity and both IDs, and changes only the link when Expected matches. A stale CAS is rejected even if it might otherwise be a repeated assignment; higher-level command retries are deduplicated by the owner before calling CAS. UnitState's version1 90-byte format remains unchanged.
 
 ## Verification and persistence limits
 
