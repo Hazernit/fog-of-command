@@ -26,8 +26,9 @@
 | Editor / module / RHI | **PASS функционально**, initialization **63.20 с**, D3D12/SM5, RTX4070, driver617.42 |
 | Три коротких PIE | **PASS**, Selected Viewport, сохранённая `/Game/Smoke`, UI+world start/teardown |
 | Startup tests ru-RU | **FAIL:425/428 PASS,3 FAIL,17CHECK errors**, те же три named tests, что 23 октября |
-| Непрерывный PIE / GPU telemetry | **NOT RUN как завершённые проверки**, начаты07:21, ожидается полный30минутный интервал |
-| Reopen / EN process comparison | **NOT RUN**, ожидают завершения длительного PIE |
+| Непрерывный PIE | **PASS**,07:21:01.213–07:51:32.052, **1830.839 с (30мин30.839с)** |
+| GPU telemetry | **PASS как наблюдение этой сцены**,1800.014с,178проб,43–49°C;0query/process-access/nonresponding/GPUfatal ошибок,0выбранных System events |
+| Reopen / EN process comparison | **NOT RUN как завершённые проверки**, длительный PIE окончен, начато повторное открытие |
 
 Desktop C++ присутствует, NativeGame workload и Unreal IDE packages не зарегистрированы. Фактическому CLI build доступных компонентов хватило; недостающих обязательных компонентов этого сценария не выявлено. Baseline DCOM warning предшествует Editor, причинная связь с GPU не установлена. Установки/настройки агентом не менялись, MyProject не открывался; raw evidence остаётся вне Git.
 
@@ -50,6 +51,19 @@ Editor26.10 загрузил новый `UnrealEditor-Foc046Smoke.dll`, иниц
 Checkpoint **07:26:18 +03:00**: UI в07:25:42 подтверждает активный PIE и обновившееся небо; log содержит4world starts/3teardowns, последний PIE продолжается. **31 проба**, последняя elapsed303.644с: GPU45°C/39%, EditorResponding=true;0query/process-access/nonresponding errors,0новыхfatal/GPU совпадений. Это промежуточное наблюдение, не завершённый30min PASS.
 
 Checkpoint **07:36:10 +03:00**: после15минут непрерывного PIE новое UI-наблюдение подтверждает активную игру/18actors и обновившуюся сцену. **90 проб**, последняя elapsed900.565с: GPU44°C/39%, EditorResponding=true; query/process-access/nonresponding errors и новыеfatal/GPU совпадения —0. Полный30min gate ещё **NOT RUN как завершённая проверка**.
+
+Итог26.10: непрерывный PIE завершён штатной кнопкой Stop **07:51:32.052**; runtime world start/teardown дают **1830.839с**, UI перед Stop подтверждает активный PIE/18actors, после Stop — Editor/8actors. Выборочные снимки около5/10/15/20/24/29/30минут подтверждали обновляющуюся сцену без наблюдаемых артефактов. Только тестовый Editor штатно закрыт в07:51:50, его процесс завершился до повторного открытия.
+
+Collector exit0: **07:21:05.883–07:51:05.898**, elapsed **1800.014с**,178CSV rows, последняя проба elapsed **1790.911с**.0query/process-access/nonresponding ошибок;178успешных приращений log,0resets/read errors/newfatal-GPU matches. SystemBefore и SystemDuring read PASS,0выбранных Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008 событий. Pre-collection окно включает более раннюю работу Editor/короткие PIE и не приписывается последующей нагрузке.
+
+| GPU26.10 | Минимум–максимум |
+|---|---|
+| Температура | **43–49°C** |
+| Загрузка | **36–42%** |
+| VRAM used | **2038–2067MiB** |
+| Power draw | **57.45–71.76W** |
+
+![26 октября: активный PIE после полного интервала, перед Stop](images/FOC-046-20261026-pie-end.jpg)
 
 ![26 октября: начало непрерывного PIE, оригинальный снимок](images/FOC-046-20261026-pie-start.jpg)
 
