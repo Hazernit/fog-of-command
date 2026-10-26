@@ -18,9 +18,10 @@ Use a new ASCII checkout outside OneDrive for the real clean build, preserving r
 | Check | Status | Evidence |
 |---|---|---|
 | Main / dependency / branch / LFS | PASS | FOC-003 merged, fast-forward main, clean tree, LFS pull/fsck |
-| Domain implementation and Automation Tests | NOT RUN | Development in progress |
+| Domain implementation and Automation Tests | Implemented; runtime NOT RUN | Four Core-only domain files, six invariant test groups; compilation/runtime pending |
 | Combined report gate / PowerShell syntax | PASS (synthetic/static) | 43 report cases on Windows PowerShell 5.1 and PowerShell 7; parser PASS; default All requires 3 old + 6 new exact tests |
-| Static checks / CI for this branch | NOT RUN | Pending implementation |
+| Local static checks | PASS | Project/LFS/domain-boundary validator, 19 Python regression cases, 43 PowerShell report cases, backlog validator and staged diff/privacy review |
+| Hosted static CI | Runner-stage PASS | [40311546552](https://github.com/Hazernit/fog-of-command/actions/runs/40311546552); full implementation CI pending push |
 | New clean Windows C++ build | NOT RUN | Pending new remote clone |
 | Old and new Unreal Automation Tests | NOT RUN | Pending compiled domain model |
 | Hosted UE build / Automation | NOT RUN | No configured UE on hosted runner; local Windows manual gate |
@@ -28,3 +29,11 @@ Use a new ASCII checkout outside OneDrive for the real clean build, preserving r
 | Owner review / merge | NOT RUN | Draft PR; no automatic merge |
 
 Only sanitized summaries belong in Git. Raw UBT/Editor logs, JSON reports, local absolute paths, generated caches and auto-created local input Config remain outside Git. MyProject/Engine source are unchanged; FOC-005 and other Issues are not started.
+
+## Implementation and review
+
+Strong GUID UnitId/OrderId, positive SideId and a single-entity state slot live in Core-only Domain files. No new module/dependency, Actor/world/Tick/UI or Order execution is introduced. Initialize/Deserialize validate a full candidate before first creation; same-ID retries cannot heal/refill/revive, another ID conflicts. Public assignment/reset is disabled; state is exposed as a const snapshot. Destroy creates a terminal tombstone while preserving identity/side/position/ammunition and clearing only the optional OrderId.
+
+V1 is a fixed 90-byte little-endian value frame with explicit schema version. Failure preserves both destination state and serialization output buffer. Review caught and prevented a FVector constructor diagnostic/sanitization path: raw decoded coordinates are checked for finiteness before constructing a vector. Invalid data uses explicit result values rather than asserts, silent correction or partial mutation.
+
+Six new Automation groups cover strong/valid/unique ID allocation (512 per GUID type), stable lifecycle IDs, zero/INT32_MAX resources, negative/NaN/Inf and incoherent imports, 64 repeated lifecycles, all 90 truncated frame prefixes, bad version/trailing/malformed fields, and alive/no-order/destroyed round trips. Each emits a concise Checked-invariants info entry. These source-level claims require the actual build/run below before being counted PASS.

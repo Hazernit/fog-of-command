@@ -89,8 +89,9 @@ The installed UE source was checked for these command/report semantics.
 The process-local LogAutomationTest verbosity preserves named engine startup
 test results for diagnosis; it does not suppress errors or change saved preferences.
 
-Expected tests (EditorContext + EngineFilter, compiled only for editor development
-automation; no additional gameplay subsystem):
+Expected tests use EditorContext + EngineFilter. Smoke tests require editor
+development automation; Core-only UnitState tests use WITH_DEV_AUTOMATION_TESTS
+and are selected in the Editor context. No additional gameplay subsystem:
 
 | Full test name | Contract |
 |---|---|
