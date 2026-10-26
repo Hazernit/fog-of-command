@@ -49,6 +49,8 @@ Editor26.10 загрузил новый `UnrealEditor-Foc046Smoke.dll`, иниц
 
 Checkpoint **07:26:18 +03:00**: UI в07:25:42 подтверждает активный PIE и обновившееся небо; log содержит4world starts/3teardowns, последний PIE продолжается. **31 проба**, последняя elapsed303.644с: GPU45°C/39%, EditorResponding=true;0query/process-access/nonresponding errors,0новыхfatal/GPU совпадений. Это промежуточное наблюдение, не завершённый30min PASS.
 
+Checkpoint **07:36:10 +03:00**: после15минут непрерывного PIE новое UI-наблюдение подтверждает активную игру/18actors и обновившуюся сцену. **90 проб**, последняя elapsed900.565с: GPU44°C/39%, EditorResponding=true; query/process-access/nonresponding errors и новыеfatal/GPU совпадения —0. Полный30min gate ещё **NOT RUN как завершённая проверка**.
+
 ![26 октября: начало непрерывного PIE, оригинальный снимок](images/FOC-046-20261026-pie-start.jpg)
 
 Подробный текущий RU log подтверждает425PASS/3FAIL: `FUnifiedErrorTest_CreateErrorMessage`7CHECK, `FUnifiedErrorTest_CreateErrorMessageWithContext`4CHECK, `FStructuredLogFormatTest`6CHECK. В прочитанном startup-снимке0fatal/assert/ensure/device-removed/GPU-crash совпадений;17 ошибок уровня Error относятся к startup automation. Отдельное Warning DirectoryWatcher об отсутствовавшем Content нового проекта не является GPU-сбоем.
