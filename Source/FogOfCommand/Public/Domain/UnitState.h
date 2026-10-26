@@ -3,7 +3,7 @@
 #include "Containers/Array.h"
 #include "Domain/UnitIdentifiers.h"
 #include "Math/Vector.h"
-#include "Templates/Optional.h"
+#include "Misc/Optional.h"
 
 namespace FogOfCommand::Domain
 {

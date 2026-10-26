@@ -21,8 +21,9 @@ Use a new ASCII checkout outside OneDrive for the real clean build, preserving r
 | Domain implementation and Automation Tests | Implemented; runtime NOT RUN | Four Core-only domain files, six invariant test groups; compilation/runtime pending |
 | Combined report gate / PowerShell syntax | PASS (synthetic/static) | 43 report cases on Windows PowerShell 5.1 and PowerShell 7; parser PASS; default All requires 3 old + 6 new exact tests |
 | Local static checks | PASS | Project/LFS/domain-boundary validator, 19 Python regression cases, 43 PowerShell report cases, backlog validator and staged diff/privacy review |
-| Hosted static CI | Runner-stage PASS | [40311546552](https://github.com/Hazernit/fog-of-command/actions/runs/40311546552); full implementation CI pending push |
-| New clean Windows C++ build | NOT RUN | Pending new remote clone |
+| Hosted static CI | PASS | [40312839893](https://github.com/Hazernit/fog-of-command/actions/runs/40312839893) on c704a3b, Ubuntu + Windows; UE NOT RUN |
+| First new clean Windows C++ build | FAIL | c704a3b, native/wrapper 6, 67.771 s wall / 66.01 s UBT; missing Optional header include |
+| Corrected clean Windows C++ build | NOT RUN | Pending new remote clone after include correction |
 | Old and new Unreal Automation Tests | NOT RUN | Pending compiled domain model |
 | Hosted UE build / Automation | NOT RUN | No configured UE on hosted runner; local Windows manual gate |
 | GUI/PIE/GPU, packaging/Shipping, Engine rebuild/cold-cache | NOT RUN | Domain/Automation scope; no new runtime scene claims |
@@ -37,3 +38,16 @@ Strong GUID UnitId/OrderId, positive SideId and a single-entity state slot live 
 V1 is a fixed 90-byte little-endian value frame with explicit schema version. Failure preserves both destination state and serialization output buffer. Review caught and prevented a FVector constructor diagnostic/sanitization path: raw decoded coordinates are checked for finiteness before constructing a vector. Invalid data uses explicit result values rather than asserts, silent correction or partial mutation.
 
 Six new Automation groups cover strong/valid/unique ID allocation (512 per GUID type), stable lifecycle IDs, zero/INT32_MAX resources, negative/NaN/Inf and incoherent imports, 64 repeated lifecycles, all 90 truncated frame prefixes, bad version/trailing/malformed fields, and alive/no-order/destroyed round trips. Each emits a concise Checked-invariants info entry. These source-level claims require the actual build/run below before being counted PASS.
+
+## First actual clean build and include correction
+
+A new remote GitHub clone of `c704a3ba5d08055248d636dca3ac7be99c6bef5d` downloaded the unchanged Startup map through LFS; pull/fsck PASS. Binaries, Intermediate, Saved and DerivedDataCache were absent before the build. **14:09:25.586–14:10:33.372 +03:00**, native/wrapper **6**, **67.771 s wall / 66.01 s UBT**, 13 actions. UBT selected **VS2022 / MSVC 14.44.35229 / Windows SDK 10.0.22621.0**, matching the compiler/SDK pins.
+
+Two compiler failures (UnitState.cpp and its tests) had the same source-header cause:
+
+```text
+UnitState.h(6): fatal error C1083: Cannot open include file: Templates/Optional.h: No such file or directory
+Result: Failed (OtherCompilationError)
+```
+
+The installed UE 5.8 Core headers confirm `Misc/Optional.h` (also used by CoreMinimal.h and AutomationTest.h), not Templates/Optional.h. This is an incorrect new source include, distinct from the location-specific PCH C1083 in #57. The include is corrected; Engine files/toolchain are unchanged. Raw evidence and the failed clone are preserved outside Git; corrected clean build and actual Automation remain **NOT RUN** until rerun. Hosted static CI passed, illustrating that it does not prove C++ compilation.
