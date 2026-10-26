@@ -1,4 +1,28 @@
 # Pure validation of the UE 5.8 Automation index.json contract. No UE launch or IO.
+function Get-FocExpectedTests {
+    [CmdletBinding()]
+    param([ValidateSet('All', 'Smoke', 'UnitState')][string]$Suite = 'All')
+
+    $smoke = @(
+        'FogOfCommand.Smoke.Configuration',
+        'FogOfCommand.Smoke.Module',
+        'FogOfCommand.Smoke.StartupMap'
+    )
+    $unitState = @(
+        'FogOfCommand.UnitState.Identifiers',
+        'FogOfCommand.UnitState.Lifecycle',
+        'FogOfCommand.UnitState.Resources',
+        'FogOfCommand.UnitState.Validation',
+        'FogOfCommand.UnitState.RepeatedOperations',
+        'FogOfCommand.UnitState.Serialization'
+    )
+    switch ($Suite) {
+        'Smoke' { $smoke }
+        'UnitState' { $unitState }
+        'All' { $smoke; $unitState }
+    }
+}
+
 function Test-FocCounter($Value) {
     # JSON counters must be scalar integers. PowerShell otherwise coerces bools
     # and compares arrays elementwise, which could turn malformed reports green.
@@ -7,13 +31,12 @@ function Test-FocCounter($Value) {
 
 function Test-FocAutomationReport {
     [CmdletBinding()]
-    param([Parameter(Mandatory = $true)] $Report)
-
-    $expected = @(
-        'FogOfCommand.Smoke.Configuration',
-        'FogOfCommand.Smoke.Module',
-        'FogOfCommand.Smoke.StartupMap'
+    param(
+        [Parameter(Mandatory = $true)] $Report,
+        [ValidateSet('All', 'Smoke', 'UnitState')][string]$Suite = 'All'
     )
+
+    $expected = @(Get-FocExpectedTests -Suite $Suite)
     $problems = [Collections.Generic.List[string]]::new()
     foreach ($name in @('succeeded', 'succeededWithWarnings', 'failed', 'notRun', 'inProcess', 'tests')) {
         if ($null -eq $Report.PSObject.Properties[$name]) { $problems.Add("Missing report field: $name") }
@@ -27,7 +50,7 @@ function Test-FocAutomationReport {
         $problems.Add('The tests field must be a JSON array.')
     }
     if ($problems.Count -eq 0) {
-        if ($Report.succeeded -ne $expected.Count) { $problems.Add('Expected exactly three successful tests.') }
+        if ($Report.succeeded -ne $expected.Count) { $problems.Add("Expected exactly $($expected.Count) successful tests for suite $Suite.") }
         foreach ($name in @('succeededWithWarnings', 'failed', 'notRun', 'inProcess')) {
             if ($Report.$name -ne 0) { $problems.Add("Nonzero report counter: $name") }
         }

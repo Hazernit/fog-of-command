@@ -19,6 +19,7 @@ Use a new ASCII checkout outside OneDrive for the real clean build, preserving r
 |---|---|---|
 | Main / dependency / branch / LFS | PASS | FOC-003 merged, fast-forward main, clean tree, LFS pull/fsck |
 | Domain implementation and Automation Tests | NOT RUN | Development in progress |
+| Combined report gate / PowerShell syntax | PASS (synthetic/static) | 43 report cases on Windows PowerShell 5.1 and PowerShell 7; parser PASS; default All requires 3 old + 6 new exact tests |
 | Static checks / CI for this branch | NOT RUN | Pending implementation |
 | New clean Windows C++ build | NOT RUN | Pending new remote clone |
 | Old and new Unreal Automation Tests | NOT RUN | Pending compiled domain model |
