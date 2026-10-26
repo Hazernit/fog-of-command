@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "Games",
+	"Description": "Minimal Windows C++ foundation for Fog of Command.",
+	"Modules": [
+		{
+			"Name": "FogOfCommand",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
