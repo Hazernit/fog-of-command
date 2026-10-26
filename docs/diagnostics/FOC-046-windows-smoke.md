@@ -16,6 +16,7 @@
 | Пробел обнаружения | Полный поиск по всем томам — **NOT RUN**; вывод ограничен проверенными manifests, registry и известными install roots |
 | Engine tools/template | Editor, Editor-Cmd, Build/Clean/RunUAT, UBT, InstalledBuild и TP_Blank C++ source/rules присутствуют |
 | Bundled .NET | **PASS**, SDK10.0.203 / runtime10.0.7 / MSBuild18.3.3 |
+| UnrealBuildTool.dll metadata | FileVersion / ProductVersion / AssemblyVersion **5.8.0.0**, прочитаны из UBT этой установки UE5.8.4; номер assembly не подменяет Engine patch/CL |
 | Visual Studio | Build Tools2019 **16.11.60**, Community2022 **17.14.42**, Community2026 **18.10.4** |
 | MSVC actual / toolset directory | **14.29.30159 / 14.29.30133**, **14.44.35229 / 14.44.35207**, **14.51.36260 / 14.51.36231** |
 | Windows SDK | **10.0.19041.0 / 10.0.22621.0 / 10.0.26100.0**: headers/libs/tools присутствуют |
@@ -28,7 +29,8 @@
 | Startup tests ru-RU | **FAIL:425/428 PASS,3 FAIL,17CHECK errors**, те же три named tests, что 23 октября |
 | Непрерывный PIE | **PASS**,07:21:01.213–07:51:32.052, **1830.839 с (30мин30.839с)** |
 | GPU telemetry | **PASS как наблюдение этой сцены**,1800.014с,178проб,43–49°C;0query/process-access/nonresponding/GPUfatal ошибок,0выбранных System events |
-| Reopen / EN process comparison | **NOT RUN как завершённые проверки**, длительный PIE окончен, начато повторное открытие |
+| Reopen / PIE | **PASS**, initialization17.17с, Play07:53:21.414 /Stop07:53:36.565 |
+| EN process comparison | **PASS:428/428 startup tests**,0ошибок уровня Error, initialization19.33с; проверенные сохранённые language/culture preferences не изменились |
 
 Desktop C++ присутствует, NativeGame workload и Unreal IDE packages не зарегистрированы. Фактическому CLI build доступных компонентов хватило; недостающих обязательных компонентов этого сценария не выявлено. Baseline DCOM warning предшествует Editor, причинная связь с GPU не установлена. Установки/настройки агентом не менялись, MyProject не открывался; raw evidence остаётся вне Git.
 
@@ -56,6 +58,8 @@ Checkpoint **07:36:10 +03:00**: после15минут непрерывного 
 
 Collector exit0: **07:21:05.883–07:51:05.898**, elapsed **1800.014с**,178CSV rows, последняя проба elapsed **1790.911с**.0query/process-access/nonresponding ошибок;178успешных приращений log,0resets/read errors/newfatal-GPU matches. SystemBefore и SystemDuring read PASS,0выбранных Display/nvlddmkm/WHEA/Kernel-Power41/EventLog6008 событий. Pre-collection окно включает более раннюю работу Editor/короткие PIE и не приписывается последующей нагрузке.
 
+Независимая проверка CSV подтвердила178последовательных samples и совпадение с embedded NVIDIA output. Интервалы10.092–10.254с; интервалов >15с нет. Последние9.103с до окончания collector не содержат отдельного sample; это ограничение периодики, а не непрерывное измерение.
+
 | GPU26.10 | Минимум–максимум |
 |---|---|
 | Температура | **43–49°C** |
@@ -69,7 +73,17 @@ Collector exit0: **07:21:05.883–07:51:05.898**, elapsed **1800.014с**,178CSV 
 
 Подробный текущий RU log подтверждает425PASS/3FAIL: `FUnifiedErrorTest_CreateErrorMessage`7CHECK, `FUnifiedErrorTest_CreateErrorMessageWithContext`4CHECK, `FStructuredLogFormatTest`6CHECK. В прочитанном startup-снимке0fatal/assert/ensure/device-removed/GPU-crash совпадений;17 ошибок уровня Error относятся к startup automation. Отдельное Warning DirectoryWatcher об отсутствовавшем Content нового проекта не является GPU-сбоем.
 
-Автоматические действия Editor26.10: уже установленный bundled Zen признан актуальным, запущен локальный ZenServer; журнал также сообщает обновление несовместимого layout key. Поэтому неизменность вообще всех глобальных Editor/cache files не заявляется. Агент установщики, исходники движка, driver/BIOS/сеть/защиту не менял.
+Автоматические действия Editor26.10: уже установленный bundled Zen признан актуальным, запущен локальный ZenServer; журнал также сообщает обновление несовместимого layout key. При reopen журнал сообщает автоматическую очистку одного orphaned AssetRegistry cache binary. Поэтому неизменность вообще всех глобальных Editor/cache files не заявляется. Агент установщики, исходники движка, driver/BIOS/сеть/защиту не менял; ручного удаления caches не выполнял.
+
+После подтверждённого выхода первого Editor тот же собранный проект и `/Game/Smoke` повторно открыты с теми же DX12/log аргументами. Модуль и RHI загружены, initialization17.17с. Play07:53:21.414 /Stop07:53:36.565 — **PASS**; затем штатное закрытие07:53:44. RU reopen повторил **425PASS/3FAIL,17CHECK errors** у тех же трёх тестов.
+
+Третий процесс добавил только диагностический `-culture=en` (и отдельное имя log). Runtime log подтверждает language/locale override=en и **428/428PASS**,0ошибок уровня Error,0fatal/assert/ensure/device-removed/GPU-crash совпадений. Модуль и D3D12/SM5/RTX4070 подтверждены, initialization19.33с. PIE в дополнительном EN-процессе — **NOT RUN**; функциональный runtime проверен в RU. EN Editor штатно закрыт **07:54:55**, все три тестовых процесса завершены по проверке07:54:56.
+
+Свежий RU/EN результат подтверждает culture-зависимость наблюдаемых startup failures на той же установленной версии. Это диагностическое сравнение, не исправление RU baseline: его3FAIL остаются в результате. Снимки сохранённых language/culture preferences **07:22:04.742 /07:55:32.322**:0keys до/после, canonical SHA256 совпадает. Финальный scan26INI candidates/13existing учитывает новые INI и те же global/Common/project roots; проверены Culture/Language/Locale/PreviewGameLanguage/AssetGroupCultures. Вывод относится только к этим предпочтениям, не ко всем Editor files.
+
+Заключительный System query после закрытия всех тестовых Editor: **07:15:35.992–07:55:32.401 +03:00**, read PASS,2события,0целевых GPU/WHEA/Kernel-Power41/EventLog6008 и **0Critical/Error/Warning**. Оба события — Information WindowsUpdateClient43×1 и19×1; это фоновая история Windows, не запущенные агентом updates. Baseline DCOM10016Warning в07:12 предшествует этому окну. Последний `nvidia-smi`07:55:32.729:exit0,53°C,GPU36%,P5,1291/12282MiB,19.16W. Это наблюдение после закрытия тестовых Editor, не утверждение о простое GPU.
+
+**NOT RUN для26.10:** независимый тяжёлый GPU stress/общая сертификация стабильности/причины прошлых сбоев,SM6/Lumen/Nanite,Engine rebuild,cold-cache performance,другие MSVC/platform targets,Unreal IDE integration,полный hash audit MyProject,приёмка pin владельцем. Локальный backlog validator и PowerShell parser/guards — PASS; GitHub Actions **NOT RUN** по paths существующего workflow. MyProject не открывался/не редактировался,FOC-002 не начиналась,main не менялся; #53/#7 остаются открытыми, PR54 Draft.
 
 ## Предыдущий завершённый прогон 2026-10-23
 
