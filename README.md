@@ -34,8 +34,8 @@
 ## Начало разработки
 
 1. **FOC-001 / FOC-046**: Windows toolchain и C++/PIE smoke приняты как базовая конфигурация; незавершённые ru-RU startup tests отслеживаются отдельно в [FOC-047](https://github.com/Hazernit/fog-of-command/issues/55).
-2. **Текущая работа — [FOC-002](https://github.com/Hazernit/fog-of-command/issues/8)**: минимальный C++ проект, GameMode и карта на закреплённой версии. Все изменения — отдельная ветка → последовательные commit/push → Draft PR → реальная сборка/PIE → ревью.
-3. Продолжать по [зависимостям backlog](backlog/README.md), а актуальные статусы смотреть в GitHub Issues.
+2. **FOC-002**: минимальный C++ проект, native GameMode и карта проверены на Windows и приняты после [ревью PR #56](https://github.com/Hazernit/fog-of-command/pull/56); [отчёт](docs/diagnostics/FOC-002-windows-smoke.md).
+3. **Следующая работа:** [FOC-003](https://github.com/Hazernit/fog-of-command/issues/9) — Automation Tests, smoke/build workflow и PR-проверки; затем [FOC-004](https://github.com/Hazernit/fog-of-command/issues/10) — модель UnitState. Каждая задача в отдельной ветке и PR.
 
 ## Сборка и запуск Windows
 
@@ -46,8 +46,7 @@
 Set-Location $env:FOC_WORKSPACE
 git clone https://github.com/Hazernit/fog-of-command.git
 Set-Location fog-of-command
-# До merge FOC-002, для проверки Draft PR:
-git switch --track origin/feat/foc-002-unreal-project
+# После merge FOC-002 игровое основание доступно в main.
 git lfs install --local
 git lfs pull
 ```
