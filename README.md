@@ -10,6 +10,7 @@
 
 - [Полный GDD v0.1 (Markdown)](docs/Fog_of_Command_GDD_v0.1.md) · [PDF](docs/Fog_of_Command_GDD_v0.1.pdf) · [Word](docs/Fog_of_Command_GDD_v0.1.docx)
 - [Дорожная карта](docs/ROADMAP.md) — этапы и критерии выхода
+- [Закреплённый Windows toolchain](docs/ENGINE_VERSION.md) · [Windows setup](docs/WINDOWS_DEVELOPMENT.md) · [проверенный smoke](docs/diagnostics/FOC-046-windows-smoke.md)
 - [Архитектура](docs/ARCHITECTURE.md) — состояние мира, разведка, команды, инварианты
 - [Правила для Codex](AGENTS.md) · [Как передавать задачи](docs/CODEX_WORKFLOW.md)
 - [Локальный backlog](backlog/README.md) — задачи, которые создаются на GitHub автоматически
@@ -24,7 +25,7 @@
 | Область | Решение |
 |---|---|
 | Первичная платформа | Windows PC |
-| Движок | Unreal Engine 5.x; **точная версия выбирается и фиксируется в FOC-001** |
+| Движок | **Unreal Engine 5.8.4 CL58902052** (закреплён Windows baseline; VS2022 17.14.42 / MSVC 14.44.35229 / SDK 22621) |
 | Языки | C++ (правила/состояние), Blueprints/UMG (сцены, UI) |
 | Первая реализация | Одиночная тактическая операция |
 | Далее | Глобальная кампания → PvP → мобильная адаптация/Roblox после отдельной оценки |
@@ -32,11 +33,11 @@
 
 ## Начало разработки
 
-1. Выполнить задачу **FOC-001**: выбрать точную версию Unreal и проверить рабочую станцию.
-2. Выполнить **FOC-002**: создать настоящий Unreal C++ проект и минимальную карту.
-3. Продолжать по [зависимостям backlog](backlog/README.md); одна задача → одна ветка → один PR.
+1. **FOC-001 / FOC-046**: Windows toolchain и C++/PIE smoke приняты как базовая конфигурация; незавершённые ru-RU startup tests отслеживаются отдельно в [FOC-047](https://github.com/Hazernit/fog-of-command/issues/55).
+2. **Следующая работа — [FOC-002](https://github.com/Hazernit/fog-of-command/issues/8)**: создать настоящий Unreal C++ проект и минимальную карту на закреплённой версии. Все изменения — отдельная ветка → последовательные commit/push → Draft PR → реальная сборка/PIE → ревью.
+3. Продолжать по [зависимостям backlog](backlog/README.md), а актуальные статусы смотреть в GitHub Issues.
 
-**Важно:** здесь пока нет сгенерированного `.uproject`; мы не выдаём документацию за работающую игру. Фактические тесты Unreal должны выполняться на машине с установленным движком.
+**Важно:** игрового `FogOfCommand.uproject` пока нет: успешные Windows smoke проводились в **отдельном одноразовом C++ проекте** вне этого репозитория. Не выдавать проверку UE за готовую игру.
 
 ## Лицензирование
 
