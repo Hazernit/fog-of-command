@@ -1,6 +1,6 @@
 # Fog of Command
 
-**Статус:** pre-production / документация и backlog. Игровой проект Unreal **ещё не создан**. Рабочее название.
+**Статус:** минимальный Unreal C++ проект FOC-002: стартовая карта, native GameMode и штатная тестовая камера. Реальные результаты clean clone/build/Editor/PIE — в [отчёте FOC-002](docs/diagnostics/FOC-002-windows-smoke.md). Дальнейшие игровые системы пока не реализованы. Рабочее название.
 
 Военная стратегия с тремя масштабами: управление государством, тактические RTS-операции и выборочное прямое управление солдатами, техникой и дронами. Центральная механика — **разница между реальным состоянием мира и тем, что игрок знает по разведданным**.
 
@@ -34,10 +34,38 @@
 ## Начало разработки
 
 1. **FOC-001 / FOC-046**: Windows toolchain и C++/PIE smoke приняты как базовая конфигурация; незавершённые ru-RU startup tests отслеживаются отдельно в [FOC-047](https://github.com/Hazernit/fog-of-command/issues/55).
-2. **Следующая работа — [FOC-002](https://github.com/Hazernit/fog-of-command/issues/8)**: создать настоящий Unreal C++ проект и минимальную карту на закреплённой версии. Все изменения — отдельная ветка → последовательные commit/push → Draft PR → реальная сборка/PIE → ревью.
-3. Продолжать по [зависимостям backlog](backlog/README.md), а актуальные статусы смотреть в GitHub Issues.
+2. **FOC-002**: минимальный C++ проект, native GameMode и карта проверены на Windows и приняты после [ревью PR #56](https://github.com/Hazernit/fog-of-command/pull/56); [отчёт](docs/diagnostics/FOC-002-windows-smoke.md).
+3. **Следующая работа:** [FOC-003](https://github.com/Hazernit/fog-of-command/issues/9) — Automation Tests, smoke/build workflow и PR-проверки; затем [FOC-004](https://github.com/Hazernit/fog-of-command/issues/10) — модель UnitState. Каждая задача в отдельной ветке и PR.
 
-**Важно:** игрового `FogOfCommand.uproject` пока нет: успешные Windows smoke проводились в **отдельном одноразовом C++ проекте** вне этого репозитория. Не выдавать проверку UE за готовую игру.
+## Сборка и запуск Windows
+
+Требуются UE **5.8.4 CL58902052**, VS2022 **17.14.42**, MSVC **14.44.35229**, SDK **10.0.22621.0** и Git LFS. Новые версии автоматически не устанавливаются. `EngineAssociation=5.8` использует стандартную регистрацию Epic; скрипт сборки дополнительно проверяет точный patch/CL, а Target rules закрепляют compiler/SDK.
+
+```powershell
+# Выберите локальный ASCII-каталог вне OneDrive для воспроизведения сборки.
+Set-Location $env:FOC_WORKSPACE
+git clone https://github.com/Hazernit/fog-of-command.git
+Set-Location fog-of-command
+# После merge FOC-002 игровое основание доступно в main.
+git lfs install --local
+git lfs pull
+```
+
+Задайте `$env:UE_ROOT` локальным корнем установленной UE. Из корня репозитория:
+
+```powershell
+$evidence = Join-Path $env:TEMP 'FOC002-local-evidence'
+./scripts/windows/build_fog_of_command.ps1 `
+  -EngineRoot $env:UE_ROOT -EvidenceRoot $evidence
+& (Join-Path $env:UE_ROOT 'Engine/Binaries/Win64/UnrealEditor.exe') `
+  (Join-Path $PWD 'FogOfCommand.uproject') -dx12 -log
+```
+
+Editor должен открыть `/Game/Maps/Startup`: земля, три простых объекта, освещение и PlayerStart. Нажмите **Play → Selected Viewport**, щёлкните по сцене: штатная свободная камера Unreal — WASD, Q/E и мышь. **Esc** или **Stop** останавливает PIE; повторный Play запускает новую сессию. Это тестовая камера, игровое RTS-управление ещё не реализуется. Генерировать карту после clone не требуется: `.umap` хранится через LFS.
+
+Для Visual Studio можно локально создать solution через контекстное меню `.uproject` → **Generate Visual Studio project files**; выбрать `Development Editor / Win64`. `.sln`, `Binaries`, `Intermediate`, `Saved`, `DerivedDataCache` в Git не входят. Скрипт не удаляет старые outputs: чистая сборка проверяется в новом clone, где этих каталогов ещё нет. Raw logs содержат локальные пути и остаются вне Git.
+
+Известные три ru-RU startup FAIL отслеживаются в [FOC-047](https://github.com/Hazernit/fog-of-command/issues/55). Не менять системную локаль для их сокрытия. Подробные команды и результаты: [Windows development](docs/WINDOWS_DEVELOPMENT.md), [FOC-002 smoke](docs/diagnostics/FOC-002-windows-smoke.md). Сборка самой UE и packaging игры — **NOT RUN**.
 
 ## Лицензирование
 
