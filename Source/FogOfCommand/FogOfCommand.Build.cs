@@ -6,5 +6,10 @@ public class FogOfCommand : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine" });
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new[] { "UnrealEd", "EngineSettings", "PhysicsCore" });
+		}
 	}
 }

@@ -67,6 +67,13 @@ Editor должен открыть `/Game/Maps/Startup`: земля, три пр
 
 Известные три ru-RU startup FAIL отслеживаются в [FOC-047](https://github.com/Hazernit/fog-of-command/issues/55). Не менять системную локаль для их сокрытия. Подробные команды и результаты: [Windows development](docs/WINDOWS_DEVELOPMENT.md), [FOC-002 smoke](docs/diagnostics/FOC-002-windows-smoke.md). Сборка самой UE и packaging игры — **NOT RUN**.
 
+## Проверки изменений
+
+[FOC-003: команды тестов и Windows gate](docs/TESTING.md) описывает статические
+проверки, чистую C++ сборку и изолированный запуск `FogOfCommand.Smoke` через
+UnrealEditor-Cmd. Фактические результаты: [FOC-003 report](docs/diagnostics/FOC-003-windows-tests.md).
+Успешный hosted static CI не означает сборку UE: на hosted runners она **NOT RUN**.
+
 ## Лицензирование
 
 Публичная доступность репозитория **не означает** разрешения использовать код или ассеты. Лицензия пока не выбрана. Перед публикацией игры требуется решение по лицензии, правам на ассеты и торговому названию.

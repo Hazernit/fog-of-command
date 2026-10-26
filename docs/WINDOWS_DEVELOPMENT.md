@@ -29,6 +29,18 @@ The completed 2026-10-26 external Blank C++ smoke used UBT auto-selected VS2022/
 - Commit source, Config, project descriptor, reproducible map assets (with LFS), tests, docs, and sanitized test reports. Keep raw diagnostics local outside Git.
 - PR must state what is working, test commands, `PASS`/`FAIL`/`NOT RUN`, third-party asset provenance, and remaining issues.
 
+## FOC-003: build and Automation gate
+
+Follow [TESTING.md](TESTING.md) for static checks, a new ASCII clone build and
+`run_fog_of_command_tests.ps1`. The latter runs only the three
+`FogOfCommand.Smoke` tests with NullRHI and requires a complete successful JSON
+report plus native exit 0. It does not claim Editor GUI/PIE/GPU rendering coverage.
+Known startup failures #55 remain separate and visible; the location-specific
+build problem is tracked in [#57](https://github.com/Hazernit/fog-of-command/issues/57).
+Record actual versions/results in the [FOC-003 report](diagnostics/FOC-003-windows-tests.md).
+Hosted CI has no configured UE installation: real UE build/tests are a local manual
+Windows gate, explicitly **NOT RUN** on hosted runners.
+
 ## Troubleshooting boundaries
 
 ### Existing FOC-002 project
