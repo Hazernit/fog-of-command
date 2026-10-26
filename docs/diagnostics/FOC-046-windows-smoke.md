@@ -44,6 +44,8 @@ Editor26.10 загрузил новый `UnrealEditor-Foc046Smoke.dll`, иниц
 
 Отдельный непрерывный PIE начат **07:21:01.213**, UI snapshot07:21:34 показывает активный PIE/18actors. Read-only GPU collector запущен после старта игры на1800с; сам exit0 collector не будет засчитан как доказательство PIE.
 
+`nvidia-smi` измеряет весь GPU. Пользовательские приложения не закрывались, их фоновая нагрузка не контролируется; всю загрузку адаптера приписывать Editor нельзя. Это периодические аппаратные измерения плюс выборочные UI-наблюдения, не непрерывная видеозапись и не независимый stress test.
+
 ![26 октября: начало непрерывного PIE, оригинальный снимок](images/FOC-046-20261026-pie-start.jpg)
 
 Подробный текущий RU log подтверждает425PASS/3FAIL: `FUnifiedErrorTest_CreateErrorMessage`7CHECK, `FUnifiedErrorTest_CreateErrorMessageWithContext`4CHECK, `FStructuredLogFormatTest`6CHECK. В прочитанном startup-снимке0fatal/assert/ensure/device-removed/GPU-crash совпадений;17 ошибок уровня Error относятся к startup automation. Отдельное Warning DirectoryWatcher об отсутствовавшем Content нового проекта не является GPU-сбоем.

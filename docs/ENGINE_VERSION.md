@@ -1,21 +1,21 @@
 # Версия Unreal и локальная сборка
 
-**Статус:** Windows build/Editor/PIE/GPU smoke выполнен в FOC-046; есть 3 RU startup test failures. Точный pin FOC-001 пока не принят владельцем.
+**Статус на 26.10.2026:** новый clean build, Editor и три коротких PIE прошли; повторный длительный PIE/GPU smoke в работе. Есть 3 RU startup test failures. Точный pin FOC-001 пока не принят владельцем. Завершённый 30-минутный прогон 23 октября хранится отдельно в отчёте.
 
 | Параметр | Значение |
 |---|---|
-| Unreal Engine | Pin **TBD — FOC-001**; измеренный кандидат **5.8.4 CL58902052** |
-| Visual Studio / MSVC | Фактический build: VS2022 **17.14.42**, MSVC **14.44.35229**, toolset directory **14.44.35207** |
-| Windows SDK | Фактически выбран **10.0.22621.0** |
+| Unreal Engine | Pin **TBD — FOC-001**; свежий inventory **5.8.4 CL58902052**, совпадает с 23 октября |
+| Visual Studio / MSVC | UBT26.10 автоматически выбрал VS2022 **17.14.42**, MSVC **14.44.35229**, toolset directory **14.44.35207** |
+| Windows SDK | UBT26.10 выбрал **10.0.22621.0** |
 | Target | Windows 11 x64, основная рабочая станция |
-| CPU / GPU / RAM | Локально: i9-9900K / RTX4070 / **63.85GiB usable**; свежий API installed-RAM недоступен |
-| Проверка стабильности драйверов | Runtime observation **PASS**: driver617.42,30мин telemetry,49–51°C,0выбранных событий/GPUfatal; независимая нагрузка **NOT RUN** |
-| Проверка PIE | Три коротких Play/Stop, **32мин21.549с** непрерывного PIE и повторное открытие/PIE **PASS** |
-| Проверка чистого C++ build | **PASS**, exit0, **93.037с** wall time, **90.70с** UBT; новый Blank C++ модуль вне Git |
-| Встроенные startup tests | ru-RU: **425/428 PASS, 3 FAIL**,17CHECK errors; процессный `-culture=en`: **428/428 PASS**,0Error |
+| CPU / GPU / RAM | Свежий inventory26.10: i9-9900K / RTX4070 / **64GiB installed,63.85GiB usable** |
+| Проверка стабильности драйверов | 26.10: **NOT RUN как завершённый интервал**, telemetry в работе; driver617.42. Прогон23.10: ограниченный PASS. Независимая нагрузка **NOT RUN** |
+| Проверка PIE | 26.10: **3 коротких Play/Stop PASS**, длительный прогон/reopen ещё **NOT RUN как завершённые проверки**. Прогон23.10:32мин21.549с и reopen PASS |
+| Проверка чистого C++ build | 26.10 **PASS**, exit0, **87.041с** wall time, **84.31с** UBT; новый Blank C++ модуль вне Git. Прогон23.10:93.037с/90.70с |
+| Встроенные startup tests | 26.10 ru-RU: **425/428 PASS,3 FAIL**,17CHECK errors; новое EN-сравнение **NOT RUN**. Прогон23.10 с `-culture=en`:428/428 PASS |
 
 Команды, очищенные выдержки и оригинальный проверенный снимок PIE: [smoke отчёт](diagnostics/FOC-046-windows-smoke.md).
 
-Три RU failures атрибутированы тестам `FUnifiedErrorTest_CreateErrorMessage`, `FUnifiedErrorTest_CreateErrorMessageWithContext`, `FStructuredLogFormatTest`. При том же проекте и процессном `-culture=en` все428тестов прошли; сохранённые language/culture preferences не изменились. Сравнение подтверждает зависимость от culture, но не исправление RU baseline. Функциональный Editor/PIE PASS не означает RU-запуска без ошибок.
+Три RU failures атрибутированы тестам `FUnifiedErrorTest_CreateErrorMessage`, `FUnifiedErrorTest_CreateErrorMessageWithContext`, `FStructuredLogFormatTest`; свежий RU запуск26.10 повторил их. Сравнение23.10 с процессным `-culture=en` дало428/428PASS без изменения сохранённых language/culture preferences; это исторический результат, не текущий EN PASS и не исправление RU baseline. Функциональный Editor/PIE PASS не означает RU-запуска без ошибок.
 
 Независимый тяжёлый GPU stress и принятие pin владельцем — **NOT RUN**. #53/#7 открыты, PR54 Draft; FOC-002 не начинается. Кандидат PR52 с VS2026/MSVC14.50 отличается от фактически собранной конфигурации; автоматического принятия или обновления версии нет.
