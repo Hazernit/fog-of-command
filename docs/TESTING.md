@@ -113,7 +113,7 @@ and are selected in the Editor context. No additional gameplay subsystem:
 | `FogOfCommand.Orders.Idempotency` | Repeated requests preserve required identity/state invariants |
 | `FogOfCommand.Orders.Destruction` | Destroyed-unit/order interactions and terminal-state rules |
 | `FogOfCommand.Orders.Timestamps` | Validate explicit timestamps and their ordering |
-| `FogOfCommand.Orders.Serialization` | Versioned order-value serialization and atomic rejection |
+| `FogOfCommand.Orders.Serialization` | Existing UnitState v1 current-order-link round trip, guarded CAS and orphan-link rejection |
 
 The wrapper requires native exit **0**, all 17 exact names once for `All` (or
 the exact three/six/eight for the explicitly selected subset), every state
