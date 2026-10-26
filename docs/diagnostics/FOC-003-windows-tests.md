@@ -20,9 +20,10 @@ Branch: `feat/foc-003-tests`.
 | Main synchronization / feature branch / LFS | PASS | Clean tree, fast-forward main, LFS pull/fsck |
 | Windows runner syntax / report failure handling | PASS (static/synthetic) | PowerShell parser; 19 report validator cases, including zero/partial/skipped/failed/wrong-suite/malformed-type reports, in Windows PowerShell 5.1 and PowerShell 7 |
 | Local static project validator / Python negative tests | PASS (static/synthetic) | Descriptor/module/targets/maps/LFS contract; 16 Python cases; backlog validator |
-| New project Automation Tests | NOT RUN | Implementation and actual Windows execution pending |
+| First actual project Automation run | Suite PASS, wrapper FAIL | Three exact report tests Success with zero warnings/errors; native exit unavailable to WinPS5 wrapper, so overall FAIL |
+| Corrected command-line runner | NOT RUN | Pending rerun after verified native process-handle fix |
 | First new clean Windows C++ build | FAIL | Native/wrapper 6, 62.653 s wall / 61.30 s UBT; C2672 in test line 143; selected pinned MSVC/SDK PASS |
-| Corrected clean Windows C++ build | NOT RUN | Pending new remote clone after the TObjectPtr fix |
+| Corrected clean Windows C++ build | PASS | New remote clone 623d543, native/wrapper 0, 63.619 s wall / 62.70 s UBT; no compiler/linker warnings/errors |
 | Hosted static checks | PASS | [PR run 40305386137](https://github.com/Hazernit/fog-of-command/actions/runs/40305386137), Ubuntu + Windows; UE NOT RUN |
 | Hosted UE build / Automation | NOT RUN | Hosted runners have no configured licensed UE installation; local Windows gate required |
 | Editor GUI / PIE / GPU rendering | NOT RUN | FOC-003 targets headless Automation; prior FOC-002 observations are not new tests |
@@ -48,3 +49,17 @@ This excerpt is translated/sanitized. The installed UE header confirms `GetStati
 Hosted static checks on this commit actually passed on both Ubuntu and Windows, including LFS, project/backlog contracts, 16 Python cases and Windows PowerShell parser/19 synthetic report cases. This does not imply the C++ compilation passed.
 
 Reproduction commands and interpretation: [TESTING.md](../TESTING.md). Synthetic validator tests are not Unreal tests.
+
+## Corrected clean Windows build
+
+A second, new remote clone downloaded `623d5436aee1bb1b47259b025c51f3ed1c80a24b`; no source, binaries or cache folders were copied from the failed clone. Git LFS pull/fsck PASS. Startup map SHA256 remained `8a9a48b6dcfbb9e0b7e6d90cd5fc459745c1cd675aae025fc78c55537ae014b8`. Binaries, Intermediate, Saved and DerivedDataCache were absent before the build.
+
+**13:14:25.757–13:15:29.395 +03:00:** native/wrapper **0**, **63.619 s wall / 62.70 s UBT**, 10 actions. UBT selected **VS2022 / MSVC 14.44.35229 / SDK 10.0.22621.0**; compiler/linker warnings **0**, errors **0**. The new Automation C++ source was compiled and the Editor module linked. Shared Engine/UBA caches were not cleared; this is a clean project build on the installed binary engine, not an Engine rebuild or cold-cache benchmark.
+
+The current VS2022 IDE patch is **17.14.43**; this observation does not rewrite the historical baseline of 17.14.42. No software was installed, upgraded or downgraded by this task; actual compiler/SDK remained pinned.
+
+## First actual Automation run and Windows PowerShell correction
+
+Run **13:15:51.656–13:16:13.083 +03:00**, 21.382 s, loaded the real C++ tests in unattended NullRHI and exported all three exact project tests as Success, with zero project warnings/errors. However, Windows PowerShell 5.1 returned a null process ExitCode after asynchronous Start-Process/redirects/WaitForExit. The wrapper correctly returned **1 / FAIL** rather than interpreting the missing native code as success. This is not a fully passing command-line run; the log's completion marker is not a substitute for a native exit observation.
+
+A small local Windows PowerShell 5.1.26100.9711 probe reproduced the issue using an owned child that delays 500 ms and exits 37: without reading its handle before waiting, ExitCode was null; with its handle cached while alive, ExitCode was 37. The runner now caches the owned handle before the bounded wait. No execution-policy/global settings changed; no log-based exit fallback was introduced. A new real Automation run is required to validate the correction.

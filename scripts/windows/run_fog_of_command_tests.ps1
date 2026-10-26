@@ -86,6 +86,10 @@ try {
     $process = Start-Process -FilePath $editor -ArgumentList $quoted -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $out 'stdout.txt') -RedirectStandardError (Join-Path $out 'stderr.txt')
     $processLaunched = $true
+    # Windows PowerShell 5.1 can otherwise lose ExitCode after an asynchronous
+    # Start-Process with redirected output. Open/cache the owned handle while
+    # the child is alive; do not infer the native code from an Editor log marker.
+    $ownedHandle = $process.Handle
     if (!$process.WaitForExit($TimeoutSeconds * 1000)) {
         $timedOut = $true
         # Only the unattended process created by this invocation is terminated.
