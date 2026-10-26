@@ -42,6 +42,8 @@
 Требуются UE **5.8.4 CL58902052**, VS2022 **17.14.42**, MSVC **14.44.35229**, SDK **10.0.22621.0** и Git LFS. Новые версии автоматически не устанавливаются. `EngineAssociation=5.8` использует стандартную регистрацию Epic; скрипт сборки дополнительно проверяет точный patch/CL, а Target rules закрепляют compiler/SDK.
 
 ```powershell
+# Выберите локальный ASCII-каталог вне OneDrive для воспроизведения сборки.
+Set-Location $env:FOC_WORKSPACE
 git clone https://github.com/Hazernit/fog-of-command.git
 Set-Location fog-of-command
 # До merge FOC-002, для проверки Draft PR:

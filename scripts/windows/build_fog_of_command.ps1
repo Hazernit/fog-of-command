@@ -141,7 +141,7 @@ $ubtLog = Join-Path $out 'UnrealBuildTool.log'
 try {
     if (Test-Path -LiteralPath $ubtLog -PathType Leaf) {
         $logText = [IO.File]::ReadAllText($ubtLog)
-        $selection = [regex]::Match($logText, '(?m)^Using Visual Studio (?<MSVC>\d+\.\d+\.\d+) toolchain \((?<ToolchainPath>[^\r\n]+?)\) and Windows (?<SDK>\d+\.\d+\.\d+\.\d+) SDK \((?<SdkPath>[^\r\n]+?)\)\.?\r?$')
+        $selection = [regex]::Match($logText, '(?m)^Using Visual Studio (?:2022 )?(?<MSVC>\d+\.\d+\.\d+) toolchain \((?<ToolchainPath>[^\r\n]+?)\) and Windows (?<SDK>\d+\.\d+\.\d+\.\d+) SDK \((?<SdkPath>[^\r\n]+?)\)\.?\r?$')
         if ($selection.Success) {
             $selectedToolchain = [ordered]@{
                 MSVC = $selection.Groups['MSVC'].Value
