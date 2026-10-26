@@ -35,7 +35,7 @@
 
 1. **FOC-001 / FOC-046**: Windows toolchain и C++/PIE smoke приняты как базовая конфигурация; незавершённые ru-RU startup tests отслеживаются отдельно в [FOC-047](https://github.com/Hazernit/fog-of-command/issues/55).
 2. **FOC-002**: минимальный C++ проект, native GameMode и карта проверены на Windows и приняты после [ревью PR #56](https://github.com/Hazernit/fog-of-command/pull/56); [отчёт](docs/diagnostics/FOC-002-windows-smoke.md).
-3. **Следующая работа:** [FOC-003](https://github.com/Hazernit/fog-of-command/issues/9) — Automation Tests, smoke/build workflow и PR-проверки; затем [FOC-004](https://github.com/Hazernit/fog-of-command/issues/10) — модель UnitState. Каждая задача в отдельной ветке и PR.
+3. **FOC-003** принята после [PR #58](https://github.com/Hazernit/fog-of-command/pull/58): воспроизводимые Automation Tests и честный static CI. **Текущая FOC-004** добавляет [доменный UnitState](docs/UNIT_STATE.md), отдельно от Actors/Tick/UI; [результаты проверок](docs/diagnostics/FOC-004-windows-unit-state.md). Последующие задачи не реализованы.
 
 ## Сборка и запуск Windows
 

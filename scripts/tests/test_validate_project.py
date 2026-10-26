@@ -133,6 +133,24 @@ class StaticContractTests(unittest.TestCase):
         self.tracked.add("Saved/Config/WindowsEditor/DefaultInput.ini")
         self.assert_error("forbidden tracked output/private file")
 
+    def test_domain_actor_dependency_is_rejected(self):
+        path = self.root / validator.DOMAIN_FILES[1]
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write('\n#include "GameFramework/Actor.h"\n')
+        self.assert_error("domain Actor/world/UI dependency")
+
+    def test_domain_reflection_dependency_is_rejected(self):
+        path = self.root / validator.DOMAIN_FILES[1]
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write('\nUCLASS() class UUnitState : public UObject {};\n')
+        self.assert_error("domain Actor/reflection/Tick boundary")
+
+    def test_domain_tick_is_rejected(self):
+        path = self.root / validator.DOMAIN_FILES[2]
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write('\nvoid Tick(float DeltaSeconds) {}\n')
+        self.assert_error("domain Actor/reflection/Tick boundary")
+
 
 if __name__ == "__main__":
     unittest.main()

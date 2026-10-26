@@ -17,6 +17,12 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 MAP = "Content/Maps/Startup.umap"
+DOMAIN_FILES = (
+    "Source/FogOfCommand/Public/Domain/UnitIdentifiers.h",
+    "Source/FogOfCommand/Public/Domain/UnitState.h",
+    "Source/FogOfCommand/Private/Domain/UnitIdentifiers.cpp",
+    "Source/FogOfCommand/Private/Domain/UnitState.cpp",
+)
 REQUIRED_FILES = (
     "FogOfCommand.uproject", "Config/DefaultEngine.ini", "Config/DefaultGame.ini",
     "Source/FogOfCommand.Target.cs", "Source/FogOfCommandEditor.Target.cs",
@@ -25,7 +31,7 @@ REQUIRED_FILES = (
     "Source/FogOfCommand/Private/FogOfCommandGameMode.cpp",
     "Source/FogOfCommand/Public/FogOfCommandGameMode.h",
     "docs/ENGINE_VERSION.md", MAP,
-)
+) + DOMAIN_FILES
 LFS_SUFFIXES = {".umap", ".uasset", ".ubulk", ".uexp", ".fbx", ".blend", ".wav"}
 BANNED_PARTS = {"binaries", "intermediate", "saved", "deriveddatacache", ".vs", ".idea", ".venv", ".tmp", "__pycache__"}
 BANNED_SUFFIXES = {".log", ".sln", ".pyc", ".tmp", ".bak", ".dmp", ".mdmp", ".etl", ".har", ".pem", ".key", ".pfx", ".p12"}
@@ -128,6 +134,19 @@ def validate(root: Path) -> list[str]:
     module_cpp = uncomment(read("Source/FogOfCommand/Private/FogOfCommand.cpp"))
     require(bool(re.search(r'IMPLEMENT_PRIMARY_GAME_MODULE\(\s*FDefaultGameModuleImpl\s*,\s*FogOfCommand\s*,\s*"FogOfCommand"\s*\)', module_cpp)), "primary game module registration mismatch")
 
+    # A narrow dependency boundary, not a C++ compiler or semantic proof. Keep
+    # FOC-004 values independent of Actor/world/UI/reflection and per-frame Tick.
+    for relative in DOMAIN_FILES:
+        source = uncomment(read(relative))
+        includes = re.findall(r'^\s*#\s*include\s*[<"]([^>"\n]+)[>"]', source, re.MULTILINE)
+        forbidden_include = any(
+            name.startswith(("Engine/", "GameFramework/", "Components/", "UObject/", "Blueprint/", "Widgets/"))
+            or name in {"Editor.h", "Engine.h"} for name in includes
+        )
+        require(not forbidden_include, "domain Actor/world/UI dependency: " + relative)
+        forbidden_symbol = re.search(r'\b(?:AActor|UWorld|UObject)\b|\bU(?:CLASS|STRUCT|PROPERTY|FUNCTION)\s*\(|\bTick\s*\(', source)
+        require(not forbidden_symbol, "domain Actor/reflection/Tick boundary: " + relative)
+
     try:
         ini = configparser.ConfigParser(interpolation=None, strict=True)
         ini.read_string(read("Config/DefaultEngine.ini"))
@@ -189,7 +208,7 @@ def main() -> int:
         for error in errors:
             print(" - " + error)
     else:
-        print("STATIC PASS: descriptor/module/target pins, map config, tracked files and committed LFS assets")
+        print("STATIC PASS: descriptor/module/target pins, map config, domain boundary, tracked files and committed LFS assets")
     print("Unreal C++ build / project Automation / Editor / PIE: NOT RUN by this static validator")
     return 1 if errors else 0
 

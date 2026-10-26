@@ -13,7 +13,7 @@ FOC-### / Refs # (использовать Closes # только после вы
 | Python static project/backlog checks и negative tests | NOT RUN | Команда, commit и итог; static PASS не равен UE PASS |
 | Git LFS / отсутствие tracked generated/raw files | NOT RUN | Pointer/object/hash, результат проверки |
 | Unreal C++ build на pinned Windows toolchain | NOT RUN | Commit, UE/CL/MSVC/SDK, native exit, время, clean/incremental |
-| Project Automation: FogOfCommand.Smoke | NOT RUN | Command, test names/counts, report verdict, exit; Engine self-tests отдельно |
+| Project Automation: FogOfCommand (Smoke + UnitState) | NOT RUN | Command, selected suite (All by default), exact test names/counts, report verdict, exit; Engine self-tests отдельно |
 | Editor / startup map / PIE / Stop / reopen | NOT RUN | Сценарий, фактические результаты и ограничения |
 | Hosted CI | NOT RUN | Ссылка на run и commit; явно указать, что UE build/runtime в hosted CI NOT RUN |
 | Контроль инвариантов (если затронуты) | NOT RUN | UnitId / ресурсы / наблюдения / продолжение AI |

@@ -67,3 +67,18 @@ PerceivedWorldState(side): only observations legally available to side
 ## Важные НЕ-решения
 
 Не выбираем сейчас полноценный ECS, MassEntity, World Partition, GAS, микросервисы, базу данных для экономики, сложную баллистику и real-world sensor fidelity. Возвращаемся к ним только после измерений или появления реальной потребности.
+
+## Минимальная реализация FOC-004
+
+В существующем модуле FogOfCommand каталог Domain содержит Core-only значения
+UnitId, SideId, OrderId и слот UnitState. [Контракт](UNIT_STATE.md) фиксирует
+стабильную идентичность, здоровье/боезапас, атомарные отказы, terminal destruction
+и version1 value snapshot. Слот не зависит от Actor, UObject, Tick, мира или UI;
+копирование снимка не создаёт новую сущность, повторная инициализация не пополняет
+ресурсы и не оживляет уничтоженный юнит.
+
+Это состояние одного юнита. Глобальный WorldState/PerceivedWorldState, реестр
+владельца, исполнение приказов, сохранения SaveGame и Actor-интеграция здесь не
+реализованы. OrderId пока только идентификатор; FOC-005 не начинается.
+Проверки выполняются через [Automation gate](TESTING.md), фактические результаты —
+в [очищенном отчёте FOC-004](diagnostics/FOC-004-windows-unit-state.md).

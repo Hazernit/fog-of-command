@@ -2,17 +2,39 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\windows\automation_report.ps1')
 
-function New-GoodReport {
-    return ('{"succeeded":3,"succeededWithWarnings":0,"failed":0,"notRun":0,"inProcess":0,"tests":[' +
-        '{"fullTestPath":"FogOfCommand.Smoke.Configuration","state":"Success","warnings":0,"errors":0},' +
-        '{"fullTestPath":"FogOfCommand.Smoke.Module","state":"Success","warnings":0,"errors":0},' +
-        '{"fullTestPath":"FogOfCommand.Smoke.StartupMap","state":"Success","warnings":0,"errors":0}]}') | ConvertFrom-Json
+function New-GoodReport([string]$Suite = 'All') {
+    $names = @(Get-FocExpectedTests -Suite $Suite)
+    return [pscustomobject]@{
+        succeeded = $names.Count; succeededWithWarnings = 0; failed = 0; notRun = 0; inProcess = 0
+        tests = @($names | ForEach-Object {
+            [pscustomobject]@{ fullTestPath = $_; state = 'Success'; warnings = 0; errors = 0 }
+        })
+    }
 }
-function Assert-Status($Report, [string]$Expected, [string]$Case) {
-    $verdict = Test-FocAutomationReport $Report
+$script:caseCount = 0
+function Assert-Status($Report, [string]$Expected, [string]$Case, [string]$Suite = 'All') {
+    $verdict = Test-FocAutomationReport -Report $Report -Suite $Suite
     if ($verdict.Status -ne $Expected) { throw "Report validation regression: $Case" }
+    $script:caseCount++
 }
-Assert-Status (New-GoodReport) 'PASS' 'complete suite'
+foreach ($suite in @('All', 'Smoke', 'UnitState')) {
+    $expectedCount = switch ($suite) { 'All' { 9 }; 'Smoke' { 3 }; 'UnitState' { 6 } }
+    $names = @(Get-FocExpectedTests -Suite $suite)
+    if ($names.Count -ne $expectedCount -or @($names | Select-Object -Unique).Count -ne $expectedCount) {
+        throw "Expected-name manifest has an incorrect count or duplicate for $suite."
+    }
+    Assert-Status (New-GoodReport $suite) 'PASS' "complete $suite suite" $suite
+    foreach ($name in $names) {
+        $report = New-GoodReport $suite
+        $report.tests = @($report.tests | Where-Object { $_.fullTestPath -cne $name })
+        $report.succeeded = $report.tests.Count
+        Assert-Status $report 'FAIL' "missing expected $name despite internally consistent counters" $suite
+    }
+}
+Assert-Status (New-GoodReport 'Smoke') 'FAIL' 'old Smoke-only report cannot pass the default combined suite'
+Assert-Status (New-GoodReport 'UnitState') 'FAIL' 'UnitState-only report cannot pass the default combined suite'
+Assert-Status (New-GoodReport 'All') 'FAIL' 'combined suite cannot masquerade as a Smoke subset' 'Smoke'
+Assert-Status (New-GoodReport 'All') 'FAIL' 'combined suite cannot masquerade as a UnitState subset' 'UnitState'
 Assert-Status ([pscustomobject]@{}) 'FAIL' 'missing fields'
 $report = New-GoodReport; $report.tests = @(); $report.succeeded = 0
 Assert-Status $report 'FAIL' 'zero selected tests'
@@ -48,4 +70,4 @@ $report = New-GoodReport; $report.tests[0].fullTestPath = @('FogOfCommand.Smoke.
 Assert-Status $report 'FAIL' 'array test name'
 $report = New-GoodReport; $report.tests = $report.tests[0]
 Assert-Status $report 'FAIL' 'object instead of test array'
-Write-Output 'PASS: 19 Automation report validator cases (synthetic; Unreal NOT RUN).'
+Write-Output "PASS: $script:caseCount Automation report validator cases (synthetic; Unreal NOT RUN)."
