@@ -49,6 +49,8 @@ Position is an Unreal coordinate value in centimetres; no world/Actor is consult
 
 ## Scope and verification
 
-OrderId is only identity metadata. Order kinds, queues, timestamps, execution and cancellation belong to FOC-005 and are not implemented. WorldState/PerceivedWorldState, resources beyond this unit's health/ammunition, RTS, AI and debug UI remain outside FOC-004.
+FOC-004 introduced OrderId as identity metadata. [FOC-005](ORDERS.md) now adds the Core-only MOVE/HOLD lifecycle and a narrow `CompareExchangeCurrentOrderId(ExpectedUnitId, Expected, Desired)` API. It requires a living initialized unit, validates IDs/expected link and changes only CurrentOrderId; no mutable snapshot is exposed. The owner in ORDERS.md coordinates record cancellation with destruction/lethal damage. Standalone UnitState destruction still clears its link without owning any order history. V1 serialization is unchanged.
+
+WorldState/PerceivedWorldState, resources beyond this unit's health/ammunition, order execution/navigation, RTS, AI and debug UI remain outside these value-state contracts.
 
 Six Automation tests cover identifiers, lifecycle, resources, invalid data, repeated operations and serialization alongside the existing three FogOfCommand.Smoke tests. Coverage includes a 512-ID sample for each GUID type, 64 repeated lifecycles, zero/INT32_MAX resource bounds, NaN/Inf, all 90 truncated frame lengths, unsupported versions and malformed fields. This is a test sample, not a mathematical proof of global GUID uniqueness. Run the combined project gate using [TESTING.md](TESTING.md); no Unreal PASS is claimed before actual Windows execution.

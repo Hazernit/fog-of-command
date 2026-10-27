@@ -151,6 +151,16 @@ class StaticContractTests(unittest.TestCase):
             stream.write('\nvoid Tick(float DeltaSeconds) {}\n')
         self.assert_error("domain Actor/reflection/Tick boundary")
 
+    def test_orders_actor_dependency_is_rejected(self):
+        path = self.root / "Source/FogOfCommand/Public/Domain/Orders.h"
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write('\n#include "Components/ActorComponent.h"\n')
+        self.assert_error("domain Actor/world/UI dependency")
+
+    def test_missing_order_implementation_is_rejected(self):
+        (self.root / "Source/FogOfCommand/Private/Domain/Orders.cpp").unlink()
+        self.assert_error("required file is missing: Source/FogOfCommand/Private/Domain/Orders.cpp")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -189,6 +189,37 @@ EUnitStateResult FUnitState::Destroy()
 	return EUnitStateResult::Success;
 }
 
+EUnitStateResult FUnitState::CompareExchangeCurrentOrderId(const FUnitId& ExpectedUnitId,
+	const TOptional<FOrderId>& Expected, const TOptional<FOrderId>& Desired)
+{
+	if (!bInitialized)
+	{
+		return EUnitStateResult::NotInitialized;
+	}
+	if (!ExpectedUnitId.IsValid())
+	{
+		return EUnitStateResult::InvalidUnitId;
+	}
+	if (ExpectedUnitId != Data.UnitId)
+	{
+		return EUnitStateResult::IdentityConflict;
+	}
+	if ((Expected.IsSet() && !Expected.GetValue().IsValid()) || (Desired.IsSet() && !Desired.GetValue().IsValid()))
+	{
+		return EUnitStateResult::InvalidOrderId;
+	}
+	if (IsDestroyed())
+	{
+		return EUnitStateResult::Destroyed;
+	}
+	if (Data.CurrentOrderId != Expected)
+	{
+		return EUnitStateResult::OrderConflict;
+	}
+	Data.CurrentOrderId = Desired;
+	return EUnitStateResult::Success;
+}
+
 EUnitStateResult FUnitState::Serialize(TArray<uint8>& OutBytes) const
 {
 	if (!bInitialized)
