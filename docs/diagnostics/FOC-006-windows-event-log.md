@@ -7,7 +7,7 @@ Date: **2026-10-27**, all times below Europe/Moscow (UTC+03:00).
 
 ## Implemented boundary
 
-[EVENT_LOG.md](../EVENT_LOG.md) documents all11 event kinds, copied values,
+[EVENT_LOG.md](../EVENT_LOG.md) documents all 11 event kinds, copied values,
 nonnegative simulation ticks, stable IDs, typed reasons, batch order and recent
 256-record ring retention. FUnitOrders is the journalled authoritative boundary;
 standalone UnitState remains a pure value API with unchanged v1 bytes. Refusals
@@ -64,7 +64,7 @@ UBT **115.61s**, **18 actions**. `Result: Succeeded`; compiler/linker warnings
 **0**, errors **0**. Selected MSVC/SDK validation PASS. First C++ build passed;
 no engine source or compile workaround was needed.
 
-## Unreal Automation — PASS, all23
+## Unreal Automation — PASS, all 23
 
 ```powershell
 ./scripts/windows/run_fog_of_command_tests.ps1 `
@@ -83,37 +83,63 @@ no timeout/launch error. Fresh JSON report contains **23 unique Success** values
 | Events, new |6/6 PASS|
 
 New groups: Transitions, Ordering, Atomicity, ReplacementAndDestruction,
-RepeatedOperations, Retention. All17 prior tests remain unchanged and ran once.
+RepeatedOperations, Retention. All 17 prior tests remain unchanged and ran once.
 Project failed/notRun/inProcess/succeededWithWarnings **0**; per-test warnings
 and errors **0**. Report test-duration sum **0.386937082s**, distinct from native
 startup/wall duration. **20 Checked markers** appear in JSON and log (6Events,
 8Orders,6UnitState). Exact manifest gate rejects old17-test or incomplete reports.
 
-Tests cover all11 kinds/payloads/reasons/IDs, equal/nonzero/INT64_MAX ticks,
+Tests cover all 11 kinds/payloads/reasons/IDs, equal/nonzero/INT64_MAX ticks,
 complete before/after state/history/clock/journal comparisons on refusal,
 replacement and Pending/Executing lethal/explicit death, stale callbacks,
 64-loop no-op cases, copied reads, bounded retention and sequence gaps. This is
 NullRHI Editor Automation, not GUI/PIE/input/rendering/GPU validation.
 
-## Developer commands on Startup — verification in progress
+## Developer commands on Startup — PASS
 
-First debug-harness invocation **FAIL**: the helper assumed `Quit` exits the
-Editor, unknown commands produce an explicit diagnostic, and Editor map loading
-uses the game-style LogLoad marker. Actual Editor source/log disproved these
-assumptions. The isolated disabled-case process continued running; only the
-proven owned harness and its Editor were stopped, and evidence was preserved.
-No other Editor/user session was closed. This is a harness failure, not a failed
-23-test domain suite. No debug PASS is inferred from it.
+```powershell
+./scripts/windows/run_fog_of_command_event_debug.ps1 `
+  -EngineRoot $env:UE_ROOT -ProjectRoot $cleanClone `
+  -EvidenceRoot $evidence -TimeoutSeconds 180
+```
 
-The second invocation used QUIT_EDITOR and both native processes exited0; it
-loaded Startup in both cases and executed the enabled scenario successfully.
-Its wrapper still reported FAIL because the registry parser missed the actual
-UE timestamp/frame prefix before two registered names. All other enabled checks
-passed:42 event lines, one scenario, two argument refusals, two identical dumps,
-11 event kinds, one stable unit. The parser now accepts that observed format;
-eight synthetic regression cases pass in PowerShell5.1/7. Final corrected native
-helper run is NOT RUN until its fresh result is recorded below.
+Final helper source **ecc8264**, using the existing clean-clone 775e9c1 C++ module.
+Run ID `FOC006-debug-20261027-145844-56a47099`; wrapper **0/PASS**, native
+**0/0**, no timeout, launch or cleanup errors. Both processes load the saved
+Startup map, create its world, complete Editor initialization and close normally
+through QUIT_EDITOR. No live player/scene state is mutated by the commands.
 
+| Case | Moscow time | Wall | Registry | Domain output | Result |
+|---|---|---|---|---|---|
+| Ordinary launch |14:58:44.788–14:59:33.338|47.853s|0 commands|0 events/scenarios|PASS|
+| Explicit -FocEventDebug |14:59:33.352–15:00:25.477|51.478s|exactly Dump + RunScenario|2 identical dumps,21 records each,11 kinds|PASS|
+
+Enabled case: one successful isolated scenario, one EMPTY read before creation,
+two fixed invalid-argument refusals, stable UnitId, exact sequence/ticks/reasons
+and identical repeated dumps (42 output lines, **21 journal entries**, no second
+mutation batch). Final isolated unit is destroyed with health 0, ammunition 8,
+position(100,0,0), no CurrentOrderId. No output is generated automatically per
+frame; only explicit commands/transitions record/dump, also covered by the 64-loop
+no-op tests and absence of domain Tick registration. A continuous rendering or
+frame-rate benchmark was not performed.
+
+Two earlier helper failures are retained as evidence: ordinary Quit did not exit
+Editor and game-style map/unknown-command assumptions were wrong; that owned
+harness/Editor alone was stopped. A second native0/0 invocation verified the
+scenario but its wrapper falsely rejected timestamp/frame-prefixed registry
+names. Source-based fixes plus eight PS5.1/7 regression fixtures corrected the
+helper; the final fresh end-to-end run above passed. No failed invocation was
+rewritten into a PASS or omitted from local evidence. These were helper failures,
+not C++/domain test failures.
+
+Final debug logs were also audited manually, independently of helper markers:
+MapCheck reports **0 errors/0 warnings** in both cases; each log contains only
+17 Error-severity lines from the same three known startup tests, **0 errors after
+commands**, and **0 fatal/assert/ensure/device/debug-failure markers**. Default
+case has2 warnings (AssetRegistry platform file journal unavailable, Zen health
+wait30.698s); enabled has3 (same journal warning, Zen30.665s, EOS HTTP cancellation).
+No layout warning appears in the final debug run. These startup/shutdown warnings
+remain observations and were not repaired or claimed caused by event code.
 ## Static checks and hosted CI
 
 - PASS: `python scripts/validate_project.py`, `python scripts/validate_backlog.py`
@@ -121,11 +147,13 @@ helper run is NOT RUN until its fresh result is recorded below.
 - PASS: `python -B -m unittest discover -s scripts/tests -p 'test_*.py'`, **25/25**.
 - PASS: report-verdict **81 synthetic cases** in native Windows PowerShell5.1 and
   PowerShell7. Missing Events, old17-report, partial/skipped/duplicate/warning/
-  malformed reports fail the new All23 gate. Synthetic cases are not UE tests.
-- PASS: PowerShell parser, including the developer helper, under5.1 and7.
+  malformed reports fail the new All 23 gate. Synthetic cases are not UE tests.
+- PASS: PowerShell parser, including the developer helper, under5.1 and7. The additional 8 registry-output
+  regression cases pass in both shells.
 - PASS: [code PR CI](https://github.com/Hazernit/fog-of-command/actions/runs/40497970183)
-  on775e9c1 and [script-stage PR CI](https://github.com/Hazernit/fog-of-command/actions/runs/40498675048)
-  on6ad6e64, both Windows/Ubuntu jobs. Hosted UE build/Automation/Editor-PIE are
+  on 775e9c1 and [script-stage PR CI](https://github.com/Hazernit/fog-of-command/actions/runs/40498675048)
+  on 6ad6e64 and [final helper CI](https://github.com/Hazernit/fog-of-command/actions/runs/40500176949)
+  on ecc8264, both Windows/Ubuntu jobs. Hosted UE build/Automation/Editor-PIE are
   explicitly **NOT RUN**, no UE installation or raw-artifact upload.
 
 ## Other diagnostics and limits
@@ -155,3 +183,6 @@ made. System locale and process culture were not overridden.
   not staged/copied/published. The development feature checkout stays clean after
   commits. MyProject, Engine sources, main, system/network/security settings were
   not modified. Draft PR remains unmerged; Issue acceptance belongs to the owner.
+Final evidence and parser fixes are documentation/PowerShell changes only;
+all C++ and asset content is byte-for-byte unchanged from the clean-built 775e9c1
+revision. Review/acceptance and merge remain with the owner.
