@@ -104,7 +104,7 @@ $editor = Join-Path $env:UE_ROOT 'Engine/Binaries/Win64/UnrealEditor-Cmd.exe'
 $project = Join-Path $PWD 'FogOfCommand.uproject'
 # Set $localLog to a NEW external file outside every Git checkout.
 & $editor $project /Game/Maps/Startup -unattended -nop4 -nosplash -nullrhi `
-  -FocEventDebug '-ExecCmds=foc.EventLog.RunScenario;foc.EventLog.Dump;Quit' `
+  -FocEventDebug '-ExecCmds=foc.EventLog.RunScenario,foc.EventLog.Dump,Quit' `
   "-abslog=$localLog"
 ```
 
@@ -115,3 +115,17 @@ unrecognized and no FOC_EVENT records/scenario may appear. Full 23-test gate
 commands and honest hosted CI limits are in [TESTING.md](TESTING.md). Raw logs
 remain local; publish only sanitized findings. A NullRHI map check does not prove
 GUI/PIE/rendering/GPU stability or a Shipping binary build.
+A reproducible two-process gate checks the ordinary and opt-in launch cases, empty
+read, invalid-argument refusals, exact sequence/ticks/types/reasons and unchanged
+repeated dumps. After a successful Editor build:
+
+```powershell
+./scripts/windows/run_fog_of_command_event_debug.ps1 `
+  -EngineRoot $env:UE_ROOT -EvidenceRoot $evidence -TimeoutSeconds 180
+if ($LASTEXITCODE -ne 0) { throw 'Developer command gate failed; inspect local evidence.' }
+```
+
+The helper validates its fixed scenario contract, and reports full Editor log
+auditing as NOT RUN by the helper. Inspect other diagnostics separately; a marker
+PASS cannot hide new engine/project errors. ExecCmds uses commas between these
+ordinary commands; the Automation runner uses a separate internal command queue.
