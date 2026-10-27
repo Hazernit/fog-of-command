@@ -17,8 +17,8 @@ function Assert-Status($Report, [string]$Expected, [string]$Case, [string]$Suite
     if ($verdict.Status -ne $Expected) { throw "Report validation regression: $Case" }
     $script:caseCount++
 }
-foreach ($suite in @('All', 'Smoke', 'UnitState', 'Orders')) {
-    $expectedCount = switch ($suite) { 'All' { 17 }; 'Smoke' { 3 }; 'UnitState' { 6 }; 'Orders' { 8 } }
+foreach ($suite in @('All', 'Smoke', 'UnitState', 'Orders', 'Events')) {
+    $expectedCount = switch ($suite) { 'All' { 23 }; 'Smoke' { 3 }; 'UnitState' { 6 }; 'Orders' { 8 }; 'Events' { 6 } }
     $names = @(Get-FocExpectedTests -Suite $suite)
     if ($names.Count -ne $expectedCount -or @($names | Select-Object -Unique).Count -ne $expectedCount) {
         throw "Expected-name manifest has an incorrect count or duplicate for $suite."
@@ -31,14 +31,14 @@ foreach ($suite in @('All', 'Smoke', 'UnitState', 'Orders')) {
         Assert-Status $report 'FAIL' "missing expected $name despite internally consistent counters" $suite
     }
 }
-foreach ($suite in @('Smoke', 'UnitState', 'Orders')) {
+foreach ($suite in @('Smoke', 'UnitState', 'Orders', 'Events')) {
     Assert-Status (New-GoodReport $suite) 'FAIL' "$suite-only report cannot pass the default combined suite"
     Assert-Status (New-GoodReport 'All') 'FAIL' "combined suite cannot masquerade as a $suite subset" $suite
     $report = New-GoodReport
     $prefix = 'FogOfCommand.' + $suite + '.'
     $report.tests = @($report.tests | Where-Object { !$_.fullTestPath.StartsWith($prefix, [StringComparison]::Ordinal) })
     $report.succeeded = $report.tests.Count
-    $case = if ($suite -eq 'Orders') { 'old nine-test report without Orders cannot pass All 17' } else { "missing entire old $suite group cannot pass All 17" }
+    $case = if ($suite -eq 'Events') { 'old seventeen-test report without Events cannot pass All 23' } else { "missing entire old $suite group cannot pass All 23" }
     Assert-Status $report 'FAIL' $case
 }
 Assert-Status ([pscustomobject]@{}) 'FAIL' 'missing fields'

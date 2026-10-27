@@ -82,8 +82,12 @@ bool FOrderSnapshot::operator==(const FOrderSnapshot& Other) const
 		&& EndReason == Other.EndReason;
 }
 
-EOrderResult FUnitOrders::Initialize(const FUnitStateSnapshot& Initial)
+EOrderResult FUnitOrders::Initialize(const FUnitStateSnapshot& Initial, int64 At)
 {
+	if (At < 0)
+	{
+		return EOrderResult::InvalidTime;
+	}
 	if (FUnitState::ValidateSnapshot(Initial) != EUnitStateResult::Success || Initial.CurrentOrderId.IsSet())
 	{
 		return EOrderResult::InvalidUnitState;
@@ -91,6 +95,8 @@ EOrderResult FUnitOrders::Initialize(const FUnitStateSnapshot& Initial)
 	switch (Unit.Initialize(Initial))
 	{
 	case EUnitStateResult::Success:
+		RecordUnitEvent(ESimulationEventType::UnitCreated, ESimulationEventReason::Created, At,
+			TOptional<FUnitStateSnapshot>());
 		return EOrderResult::Success;
 	case EUnitStateResult::AlreadyExists:
 		return EOrderResult::AlreadyExists;
@@ -147,8 +153,66 @@ EOrderResult FUnitOrders::CheckMutationTime(int64 At) const
 	{
 		return EOrderResult::InvalidTime;
 	}
-	return LastMutationTime.IsSet() && At < LastMutationTime.GetValue()
+	return EventLog.GetLastSimulationTick().IsSet() && At < EventLog.GetLastSimulationTick().GetValue()
 		? EOrderResult::TimeRegression : EOrderResult::Success;
+}
+
+EOrderResult FUnitOrders::CheckActiveInvariant() const
+{
+	if (!Unit.IsInitialized() || FUnitState::ValidateSnapshot(Unit.GetSnapshot()) != EUnitStateResult::Success)
+	{
+		return EOrderResult::InvariantViolation;
+	}
+	const TOptional<FOrderId>& Current = Unit.GetSnapshot().CurrentOrderId;
+	if (Current.IsSet())
+	{
+		const FOrderSnapshot* Active = History.Find(Current.GetValue());
+		if (!Unit.IsAlive() || !Active || !IsActive(Active->Status) || !IsValidRecord(*Active)
+			|| Active->Request.UnitId != Unit.GetSnapshot().UnitId || Active->Request.OrderId != Current.GetValue())
+		{
+			return EOrderResult::InvariantViolation;
+		}
+	}
+	return EOrderResult::Success;
+}
+
+void FUnitOrders::RecordUnitEvent(ESimulationEventType Type, ESimulationEventReason Reason, int64 At,
+	const TOptional<FUnitStateSnapshot>& Before)
+{
+	FSimulationEvent Event;
+	Event.Type = Type;
+	Event.SimulationTick = At;
+	Event.UnitId = Unit.GetSnapshot().UnitId;
+	Event.UnitBefore = Before;
+	Event.UnitAfter = Unit.GetSnapshot();
+	Event.OrderId = Before.IsSet() ? Before.GetValue().CurrentOrderId : Unit.GetSnapshot().CurrentOrderId;
+	Event.Reason = Reason;
+	EventLog.Append(MoveTemp(Event));
+}
+
+void FUnitOrders::RecordOrderEvent(ESimulationEventType Type, const FOrderSnapshot& Order, int64 At,
+	const TOptional<EOrderStatus>& PreviousStatus, const TOptional<FOrderId>& RelatedOrderId)
+{
+	FSimulationEvent Event;
+	Event.Type = Type;
+	Event.SimulationTick = At;
+	Event.UnitId = Order.Request.UnitId;
+	Event.OrderId = Order.Request.OrderId;
+	Event.RelatedOrderId = RelatedOrderId;
+	Event.PreviousOrderStatus = PreviousStatus;
+	Event.OrderStatus = Order.Status;
+	Event.OrderKind = Order.Request.Kind;
+	Event.TargetPosition = Order.Request.TargetPosition;
+	switch (Order.EndReason)
+	{
+	case EOrderEndReason::Completed: Event.Reason = ESimulationEventReason::Completed; break;
+	case EOrderEndReason::CancelledByRequest: Event.Reason = ESimulationEventReason::CancelledByRequest; break;
+	case EOrderEndReason::Replaced: Event.Reason = ESimulationEventReason::Replaced; break;
+	case EOrderEndReason::UnitDestroyed: Event.Reason = ESimulationEventReason::UnitDestroyed; break;
+	case EOrderEndReason::ExecutionFailed: Event.Reason = ESimulationEventReason::ExecutionFailed; break;
+	default: Event.Reason = ESimulationEventReason::None; break;
+	}
+	EventLog.Append(MoveTemp(Event));
 }
 
 EOrderResult FUnitOrders::Validate() const
@@ -223,7 +287,7 @@ EOrderResult FUnitOrders::Submit(const FOrderRequest& Request, int64 At)
 	{
 		return EOrderResult::UnitDestroyed;
 	}
-	if (Validate() != EOrderResult::Success)
+	if (CheckActiveInvariant() != EOrderResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
 	}
@@ -238,12 +302,17 @@ EOrderResult FUnitOrders::Submit(const FOrderRequest& Request, int64 At)
 	}
 	FOrderSnapshot NewOrder = PendingOrder(Request, At);
 	const FOrderId NewId = Request.OrderId;
+	if (!EventLog.CanAppend(1))
+	{
+		return EOrderResult::EventSequenceExhausted;
+	}
 	if (Unit.CompareExchangeCurrentOrderId(Request.UnitId, TOptional<FOrderId>(), NewId) != EUnitStateResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
 	}
 	History.Add(NewId, MoveTemp(NewOrder));
 	LastMutationTime = At;
+	RecordOrderEvent(ESimulationEventType::OrderSubmitted, History.FindChecked(NewId), At, TOptional<EOrderStatus>());
 	return EOrderResult::Success;
 }
 
@@ -279,7 +348,7 @@ EOrderResult FUnitOrders::Replace(const FOrderRequest& Request, const FOrderId& 
 	{
 		return EOrderResult::UnitDestroyed;
 	}
-	if (Validate() != EOrderResult::Success)
+	if (CheckActiveInvariant() != EOrderResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
 	}
@@ -294,10 +363,17 @@ EOrderResult FUnitOrders::Replace(const FOrderRequest& Request, const FOrderId& 
 		return TimeValidation;
 	}
 	FOrderSnapshot* OldOrder = History.Find(ExpectedCurrent);
+	// ExpectedCurrent may be borrowed from the unit's link, which CAS replaces below.
+	const FOrderId OldId = ExpectedCurrent;
+	const EOrderStatus PreviousStatus = OldOrder->Status;
 	FOrderSnapshot Cancelled = *OldOrder;
 	SetTerminal(Cancelled, EOrderStatus::Cancelled, EOrderEndReason::Replaced, At);
 	FOrderSnapshot NewOrder = PendingOrder(Request, At);
 	const FOrderId NewId = Request.OrderId;
+	if (!EventLog.CanAppend(3))
+	{
+		return EOrderResult::EventSequenceExhausted;
+	}
 	if (Unit.CompareExchangeCurrentOrderId(Request.UnitId, ExpectedCurrent, NewId) != EUnitStateResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
@@ -306,6 +382,9 @@ EOrderResult FUnitOrders::Replace(const FOrderRequest& Request, const FOrderId& 
 	*OldOrder = MoveTemp(Cancelled);
 	History.Add(NewId, MoveTemp(NewOrder));
 	LastMutationTime = At;
+	RecordOrderEvent(ESimulationEventType::OrderCancelled, History.FindChecked(OldId), At, PreviousStatus);
+	RecordOrderEvent(ESimulationEventType::OrderSubmitted, History.FindChecked(NewId), At, TOptional<EOrderStatus>());
+	RecordOrderEvent(ESimulationEventType::OrderReplaced, History.FindChecked(OldId), At, PreviousStatus, NewId);
 	return EOrderResult::Success;
 }
 
@@ -341,7 +420,7 @@ EOrderResult FUnitOrders::Start(const FUnitId& UnitId, const FOrderId& OrderId, 
 	{
 		return EOrderResult::UnitDestroyed;
 	}
-	if (Validate() != EOrderResult::Success)
+	if (CheckActiveInvariant() != EOrderResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
 	}
@@ -350,10 +429,15 @@ EOrderResult FUnitOrders::Start(const FUnitId& UnitId, const FOrderId& OrderId, 
 	{
 		return TimeValidation;
 	}
+	if (!EventLog.CanAppend(1))
+	{
+		return EOrderResult::EventSequenceExhausted;
+	}
 	Order->Status = EOrderStatus::Executing;
 	Order->StartedAt = At;
 	Order->UpdatedAt = At;
 	LastMutationTime = At;
+	RecordOrderEvent(ESimulationEventType::OrderStarted, *Order, At, EOrderStatus::Pending);
 	return EOrderResult::Success;
 }
 
@@ -421,7 +505,7 @@ EOrderResult FUnitOrders::Finish(const FUnitId& UnitId, const FOrderId& OrderId,
 	{
 		return EOrderResult::InvalidTransition;
 	}
-	if (Validate() != EOrderResult::Success)
+	if (CheckActiveInvariant() != EOrderResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
 	}
@@ -431,13 +515,21 @@ EOrderResult FUnitOrders::Finish(const FUnitId& UnitId, const FOrderId& OrderId,
 		return TimeValidation;
 	}
 	FOrderSnapshot Finished = *Order;
+	const EOrderStatus PreviousStatus = Order->Status;
 	SetTerminal(Finished, Status, Reason, At);
+	if (!EventLog.CanAppend(1))
+	{
+		return EOrderResult::EventSequenceExhausted;
+	}
 	if (Unit.CompareExchangeCurrentOrderId(UnitId, OrderId, TOptional<FOrderId>()) != EUnitStateResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
 	}
 	*Order = MoveTemp(Finished);
 	LastMutationTime = At;
+	const ESimulationEventType Type = Status == EOrderStatus::Completed ? ESimulationEventType::OrderCompleted
+		: Status == EOrderStatus::Cancelled ? ESimulationEventType::OrderCancelled : ESimulationEventType::OrderFailed;
+	RecordOrderEvent(Type, *Order, At, PreviousStatus);
 	return EOrderResult::Success;
 }
 
@@ -456,7 +548,7 @@ EOrderResult FUnitOrders::DestroyUnit(const FUnitId& UnitId, int64 At)
 	{
 		return EOrderResult::AlreadyApplied;
 	}
-	if (Validate() != EOrderResult::Success)
+	if (CheckActiveInvariant() != EOrderResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
 	}
@@ -467,11 +559,18 @@ EOrderResult FUnitOrders::DestroyUnit(const FUnitId& UnitId, int64 At)
 	}
 	FOrderSnapshot* Active = Unit.GetSnapshot().CurrentOrderId.IsSet()
 		? History.Find(Unit.GetSnapshot().CurrentOrderId.GetValue()) : nullptr;
+	const FUnitStateSnapshot Before = Unit.GetSnapshot();
+	TOptional<EOrderStatus> PreviousStatus;
 	TOptional<FOrderSnapshot> Cancelled;
 	if (Active)
 	{
+		PreviousStatus = Active->Status;
 		Cancelled = *Active;
 		SetTerminal(Cancelled.GetValue(), EOrderStatus::Cancelled, EOrderEndReason::UnitDestroyed, At);
+	}
+	if (!EventLog.CanAppend(Active ? 2 : 1))
+	{
+		return EOrderResult::EventSequenceExhausted;
 	}
 	if (Unit.Destroy() != EUnitStateResult::Success)
 	{
@@ -482,6 +581,11 @@ EOrderResult FUnitOrders::DestroyUnit(const FUnitId& UnitId, int64 At)
 		*Active = MoveTemp(Cancelled.GetValue());
 	}
 	LastMutationTime = At;
+	if (Active)
+	{
+		RecordOrderEvent(ESimulationEventType::OrderCancelled, *Active, At, PreviousStatus);
+	}
+	RecordUnitEvent(ESimulationEventType::UnitDestroyed, ESimulationEventReason::ExplicitDestruction, At, Before);
 	return EOrderResult::Success;
 }
 
@@ -504,7 +608,7 @@ EOrderResult FUnitOrders::ApplyDamage(const FUnitId& UnitId, double Amount, int6
 	{
 		return EOrderResult::InvalidAmount;
 	}
-	if (Validate() != EOrderResult::Success)
+	if (CheckActiveInvariant() != EOrderResult::Success)
 	{
 		return EOrderResult::InvariantViolation;
 	}
@@ -525,11 +629,18 @@ EOrderResult FUnitOrders::ApplyDamage(const FUnitId& UnitId, double Amount, int6
 	}
 	FOrderSnapshot* Active = Unit.GetSnapshot().CurrentOrderId.IsSet()
 		? History.Find(Unit.GetSnapshot().CurrentOrderId.GetValue()) : nullptr;
+	const FUnitStateSnapshot Before = Unit.GetSnapshot();
+	TOptional<EOrderStatus> PreviousStatus;
 	TOptional<FOrderSnapshot> Cancelled;
 	if (Preview.IsDestroyed() && Active)
 	{
+		PreviousStatus = Active->Status;
 		Cancelled = *Active;
 		SetTerminal(Cancelled.GetValue(), EOrderStatus::Cancelled, EOrderEndReason::UnitDestroyed, At);
+	}
+	if (!EventLog.CanAppend(1 + (Preview.IsDestroyed() ? 1 : 0) + (Cancelled.IsSet() ? 1 : 0)))
+	{
+		return EOrderResult::EventSequenceExhausted;
 	}
 	if (Unit.ApplyDamage(Amount) != EUnitStateResult::Success)
 	{
@@ -540,6 +651,111 @@ EOrderResult FUnitOrders::ApplyDamage(const FUnitId& UnitId, double Amount, int6
 		*Active = MoveTemp(Cancelled.GetValue());
 	}
 	LastMutationTime = At;
+	RecordUnitEvent(ESimulationEventType::UnitDamaged, ESimulationEventReason::DamageApplied, At, Before);
+	if (Cancelled.IsSet())
+	{
+		RecordOrderEvent(ESimulationEventType::OrderCancelled, *Active, At, PreviousStatus);
+	}
+	if (Unit.IsDestroyed())
+	{
+		RecordUnitEvent(ESimulationEventType::UnitDestroyed, ESimulationEventReason::DamageApplied, At, Before);
+	}
+	return EOrderResult::Success;
+}
+
+EOrderResult FUnitOrders::MoveUnit(const FUnitId& UnitId, const FVector& Position, int64 At)
+{
+	if (At < 0)
+	{
+		return EOrderResult::InvalidTime;
+	}
+	const EOrderResult UnitValidation = CheckUnit(UnitId);
+	if (UnitValidation != EOrderResult::Success)
+	{
+		return UnitValidation;
+	}
+	if (Unit.IsDestroyed())
+	{
+		return EOrderResult::UnitDestroyed;
+	}
+	if (CheckActiveInvariant() != EOrderResult::Success)
+	{
+		return EOrderResult::InvariantViolation;
+	}
+	FUnitState Preview(Unit);
+	if (Preview.MoveTo(Position) != EUnitStateResult::Success)
+	{
+		return EOrderResult::InvalidPosition;
+	}
+	if (Preview.GetSnapshot() == Unit.GetSnapshot())
+	{
+		return EOrderResult::AlreadyApplied;
+	}
+	const EOrderResult TimeValidation = CheckMutationTime(At);
+	if (TimeValidation != EOrderResult::Success)
+	{
+		return TimeValidation;
+	}
+	if (!EventLog.CanAppend(1))
+	{
+		return EOrderResult::EventSequenceExhausted;
+	}
+	const FUnitStateSnapshot Before = Unit.GetSnapshot();
+	if (Unit.MoveTo(Position) != EUnitStateResult::Success)
+	{
+		return EOrderResult::InvariantViolation;
+	}
+	LastMutationTime = At;
+	RecordUnitEvent(ESimulationEventType::UnitMoved, ESimulationEventReason::PositionChanged, At, Before);
+	return EOrderResult::Success;
+}
+
+EOrderResult FUnitOrders::ConsumeAmmunition(const FUnitId& UnitId, int32 Amount, int64 At)
+{
+	if (At < 0)
+	{
+		return EOrderResult::InvalidTime;
+	}
+	const EOrderResult UnitValidation = CheckUnit(UnitId);
+	if (UnitValidation != EOrderResult::Success)
+	{
+		return UnitValidation;
+	}
+	if (Unit.IsDestroyed())
+	{
+		return EOrderResult::UnitDestroyed;
+	}
+	if (CheckActiveInvariant() != EOrderResult::Success)
+	{
+		return EOrderResult::InvariantViolation;
+	}
+	FUnitState Preview(Unit);
+	const EUnitStateResult PreviewResult = Preview.ConsumeAmmunition(Amount);
+	if (PreviewResult != EUnitStateResult::Success)
+	{
+		return PreviewResult == EUnitStateResult::InsufficientAmmunition
+			? EOrderResult::InsufficientAmmunition : EOrderResult::InvalidAmount;
+	}
+	if (Preview.GetSnapshot() == Unit.GetSnapshot())
+	{
+		return EOrderResult::AlreadyApplied;
+	}
+	const EOrderResult TimeValidation = CheckMutationTime(At);
+	if (TimeValidation != EOrderResult::Success)
+	{
+		return TimeValidation;
+	}
+	if (!EventLog.CanAppend(1))
+	{
+		return EOrderResult::EventSequenceExhausted;
+	}
+	const FUnitStateSnapshot Before = Unit.GetSnapshot();
+	if (Unit.ConsumeAmmunition(Amount) != EUnitStateResult::Success)
+	{
+		return EOrderResult::InvariantViolation;
+	}
+	LastMutationTime = At;
+	RecordUnitEvent(ESimulationEventType::AmmunitionConsumed, ESimulationEventReason::AmmunitionSpent, At, Before);
 	return EOrderResult::Success;
 }
 }

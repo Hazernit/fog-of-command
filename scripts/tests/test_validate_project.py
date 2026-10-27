@@ -161,6 +161,27 @@ class StaticContractTests(unittest.TestCase):
         (self.root / "Source/FogOfCommand/Private/Domain/Orders.cpp").unlink()
         self.assert_error("required file is missing: Source/FogOfCommand/Private/Domain/Orders.cpp")
 
+    def test_events_actor_dependency_is_rejected(self):
+        path = self.root / "Source/FogOfCommand/Public/Domain/SimulationEvents.h"
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write('\n#include "Engine/World.h"\n')
+        self.assert_error("domain Actor/world/UI dependency")
+
+    def test_missing_event_implementation_is_rejected(self):
+        relative = "Source/FogOfCommand/Private/Domain/SimulationEvents.cpp"
+        (self.root / relative).unlink()
+        self.assert_error("required file is missing: " + relative)
+
+    def test_missing_debug_build_guard_is_rejected(self):
+        relative = validator.DEBUG_FILES[1]
+        self.replace(relative, "#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST", "#if 1")
+        self.assert_error("developer debug build guard missing")
+
+    def test_missing_debug_opt_in_is_rejected(self):
+        relative = validator.DEBUG_FILES[1]
+        self.replace(relative, 'TEXT("FocEventDebug")', 'TEXT("UnrelatedFlag")')
+        self.assert_error("developer debug explicit opt-in flag missing")
+
 
 if __name__ == "__main__":
     unittest.main()

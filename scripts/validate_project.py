@@ -24,6 +24,12 @@ DOMAIN_FILES = (
     "Source/FogOfCommand/Private/Domain/UnitState.cpp",
     "Source/FogOfCommand/Public/Domain/Orders.h",
     "Source/FogOfCommand/Private/Domain/Orders.cpp",
+    "Source/FogOfCommand/Public/Domain/SimulationEvents.h",
+    "Source/FogOfCommand/Private/Domain/SimulationEvents.cpp",
+)
+DEBUG_FILES = (
+    "Source/FogOfCommand/Private/Debug/EventLogDebug.h",
+    "Source/FogOfCommand/Private/Debug/EventLogDebug.cpp",
 )
 REQUIRED_FILES = (
     "FogOfCommand.uproject", "Config/DefaultEngine.ini", "Config/DefaultGame.ini",
@@ -33,7 +39,7 @@ REQUIRED_FILES = (
     "Source/FogOfCommand/Private/FogOfCommandGameMode.cpp",
     "Source/FogOfCommand/Public/FogOfCommandGameMode.h",
     "docs/ENGINE_VERSION.md", MAP,
-) + DOMAIN_FILES
+) + DOMAIN_FILES + DEBUG_FILES
 LFS_SUFFIXES = {".umap", ".uasset", ".ubulk", ".uexp", ".fbx", ".blend", ".wav"}
 BANNED_PARTS = {"binaries", "intermediate", "saved", "deriveddatacache", ".vs", ".idea", ".venv", ".tmp", "__pycache__"}
 BANNED_SUFFIXES = {".log", ".sln", ".pyc", ".tmp", ".bak", ".dmp", ".mdmp", ".etl", ".har", ".pem", ".key", ".pfx", ".p12"}
@@ -134,10 +140,22 @@ def validate(root: Path) -> list[str]:
     require(bool(re.search(r"class\s+FogOfCommand\s*:\s*ModuleRules\b", module)), "FogOfCommand module rules class mismatch")
     require(all('"' + name + '"' in module for name in ("Core", "CoreUObject", "Engine")), "core module dependencies are missing")
     module_cpp = uncomment(read("Source/FogOfCommand/Private/FogOfCommand.cpp"))
-    require(bool(re.search(r'IMPLEMENT_PRIMARY_GAME_MODULE\(\s*FDefaultGameModuleImpl\s*,\s*FogOfCommand\s*,\s*"FogOfCommand"\s*\)', module_cpp)), "primary game module registration mismatch")
+    require(bool(re.search(r'IMPLEMENT_PRIMARY_GAME_MODULE\(\s*FFogOfCommandModule\s*,\s*FogOfCommand\s*,\s*"FogOfCommand"\s*\)', module_cpp)), "primary game module registration mismatch")
+
+    # Source-shape safety contracts only, not a preprocessor/compiler proof.
+    # Real dev-disabled/opt-in behavior remains a Windows runtime acceptance gate.
+    require(bool(re.search(r"class\s+FFogOfCommandModule\s*:\s*public\s+FDefaultGameModuleImpl\b", module_cpp)),
+            "developer module class mismatch")
+    guard = r"^\s*#\s*if\s+!UE_BUILD_SHIPPING\s*&&\s*!UE_BUILD_TEST\s*$"
+    for relative in ("Source/FogOfCommand/Private/FogOfCommand.cpp",) + DEBUG_FILES:
+        source = uncomment(read(relative))
+        require(bool(re.search(guard, source, re.MULTILINE)), "developer debug build guard missing: " + relative)
+    debug_cpp = uncomment(read(DEBUG_FILES[1]))
+    require(bool(re.search(r'FParse::Param\(\s*FCommandLine::Get\(\)\s*,\s*TEXT\(\s*"FocEventDebug"\s*\)\s*\)', debug_cpp)),
+            "developer debug explicit opt-in flag missing")
 
     # A narrow dependency boundary, not a C++ compiler or semantic proof. Keep
-    # FOC-004 values independent of Actor/world/UI/reflection and per-frame Tick.
+    # domain values independent of Actor/world/UI/reflection and per-frame Tick.
     for relative in DOMAIN_FILES:
         source = uncomment(read(relative))
         includes = re.findall(r'^\s*#\s*include\s*[<"]([^>"\n]+)[>"]', source, re.MULTILINE)
@@ -210,7 +228,7 @@ def main() -> int:
         for error in errors:
             print(" - " + error)
     else:
-        print("STATIC PASS: descriptor/module/target pins, map config, domain boundary, tracked files and committed LFS assets")
+        print("STATIC PASS: descriptor/module/target pins, map config, domain/debug contracts, tracked files and committed LFS assets")
     print("Unreal C++ build / project Automation / Editor / PIE: NOT RUN by this static validator")
     return 1 if errors else 0
 

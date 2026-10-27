@@ -1,7 +1,7 @@
 # Pure validation of the UE 5.8 Automation index.json contract. No UE launch or IO.
 function Get-FocExpectedTests {
     [CmdletBinding()]
-    param([ValidateSet('All', 'Smoke', 'UnitState', 'Orders')][string]$Suite = 'All')
+    param([ValidateSet('All', 'Smoke', 'UnitState', 'Orders', 'Events')][string]$Suite = 'All')
 
     $smoke = @(
         'FogOfCommand.Smoke.Configuration',
@@ -26,11 +26,20 @@ function Get-FocExpectedTests {
         'FogOfCommand.Orders.Timestamps',
         'FogOfCommand.Orders.Serialization'
     )
+    $events = @(
+        'FogOfCommand.Events.Transitions',
+        'FogOfCommand.Events.Ordering',
+        'FogOfCommand.Events.Atomicity',
+        'FogOfCommand.Events.ReplacementAndDestruction',
+        'FogOfCommand.Events.RepeatedOperations',
+        'FogOfCommand.Events.Retention'
+    )
     switch ($Suite) {
         'Smoke' { $smoke }
         'UnitState' { $unitState }
         'Orders' { $orders }
-        'All' { $smoke; $unitState; $orders }
+        'Events' { $events }
+        'All' { $smoke; $unitState; $orders; $events }
     }
 }
 
@@ -44,7 +53,7 @@ function Test-FocAutomationReport {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)] $Report,
-        [ValidateSet('All', 'Smoke', 'UnitState', 'Orders')][string]$Suite = 'All'
+        [ValidateSet('All', 'Smoke', 'UnitState', 'Orders', 'Events')][string]$Suite = 'All'
     )
 
     $expected = @(Get-FocExpectedTests -Suite $Suite)
