@@ -71,9 +71,11 @@ if (Test-Path -LiteralPath $out) { throw 'Refusing to overwrite or reuse debug e
 New-Item -ItemType Directory -Path $out | Out-Null
 
 # Ordinary ExecCmds uses commas; semicolon is internal to the Automation queue.
+# Editor CLI Quit is not an exit request; QUIT_EDITOR calls CloseEditor/RequestEngineExit.
+# The processes below are owned unattended clone sessions, with no user work to close.
 $cases = @(
-    @{ Name = 'disabled'; Enabled = $false; Commands = 'foc.EventLog.RunScenario,foc.EventLog.Dump,Quit' },
-    @{ Name = 'enabled'; Enabled = $true; Commands = 'foc.EventLog.Dump,foc.EventLog.RunScenario rejected,foc.EventLog.RunScenario,foc.EventLog.Dump,foc.EventLog.RunScenario rejected,foc.EventLog.Dump,Quit' }
+    @{ Name = 'disabled'; Enabled = $false; Commands = 'DumpCCmds foc.EventLog.,foc.EventLog.RunScenario,foc.EventLog.Dump,QUIT_EDITOR' },
+    @{ Name = 'enabled'; Enabled = $true; Commands = 'DumpCCmds foc.EventLog.,foc.EventLog.Dump,foc.EventLog.RunScenario rejected,foc.EventLog.RunScenario,foc.EventLog.Dump,foc.EventLog.RunScenario rejected,foc.EventLog.Dump,QUIT_EDITOR' }
 )
 $expected = @(
     @{ Type = 'UnitCreated'; Tick = 0; Reason = 'Created' },
@@ -152,10 +154,24 @@ foreach ($case in $cases) {
     $rejected = @($lines | Where-Object { $_ -cmatch 'FOC_EVENT_DEBUG REJECTED:' })
     $empty = @($lines | Where-Object { $_ -cmatch 'FOC_EVENT_DEBUG EMPTY:' })
     $dump = @($lines | Where-Object { $_ -cmatch 'FOC_EVENT_DEBUG DUMP retained=21 total=21 evicted=0' })
-    $mapLoaded = @($lines | Where-Object { $_ -cmatch 'LogLoad:.*LoadMap: /Game/Maps/Startup' })
+    # Editor map loading uses MAP LOAD rather than the game-mode LogLoad: LoadMap.
+    $mapLoaded = @($lines | Where-Object { $_ -cmatch 'Cmd: MAP LOAD FILE="[^"\r\n]*[\\/]Content[\\/]Maps[\\/]Startup\.umap"' })
+    $mapWorld = @($lines | Where-Object { $_ -cmatch "LogAudio:.*Audio Device .* registered with world 'Startup'" })
+    $editorReady = @($lines | Where-Object { $_ -cmatch 'LogUnrealEdMisc: Total Editor Startup Time' })
+    $mapChecks = @($lines | Where-Object { $_ -cmatch 'MapCheck:' })
+    $registryQueries = @($lines | Where-Object { $_ -cmatch 'Cmd: DumpCCmds foc\.EventLog\.\s*$' })
+    # DumpCCmds emits one registered command name per line. Do not count command
+    # execution echoes or metadata containing the same name as registry entries.
+    $registered = @($lines | Where-Object { $_ -cnotmatch 'Cmd:|commandline=|Command Line:' } | ForEach-Object {
+        $entry = [regex]::Match($_, '(?:^|:\s*)\s*(foc\.EventLog\.\w+)\s*$')
+        if ($entry.Success) { $entry.Groups[1].Value }
+    })
     $unknown = @($lines | Where-Object { $_ -cmatch 'Command not recognized: foc\.EventLog\.' })
     $failed = @($lines | Where-Object { $_ -cmatch 'FOC_EVENT_DEBUG FAIL:' })
-    if ($mapLoaded.Count -lt 1) { $problems.Add('Startup map load was not observed.') }
+    if ($mapLoaded.Count -lt 1 -or $mapWorld.Count -lt 1 -or $editorReady.Count -lt 1) {
+        $problems.Add('Startup map load/world and completed Editor initialization were not observed.')
+    }
+    if ($registryQueries.Count -ne 1) { $problems.Add('The registered-command query was not observed exactly once.') }
     if ($failed.Count) { $problems.Add('Isolated scenario reported failure.') }
     $sequenceOk = $true
     $sameDump = $true
@@ -163,8 +179,12 @@ foreach ($case in $cases) {
     $unitIds = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     if ($case.Enabled) {
         if ($events.Count -ne 42 -or $scenario.Count -ne 1 -or $rejected.Count -ne 2 -or
-            $empty.Count -ne 1 -or $dump.Count -ne 2 -or $unknown.Count -ne 0) {
+            $empty.Count -ne 1 -or $dump.Count -ne 2) {
             $problems.Add('Enabled scenario/empty/refusal/double-dump markers do not match the contract.')
+        }
+        if ($registered.Count -ne 2 -or @($registered | Where-Object { $_ -ceq 'foc.EventLog.RunScenario' }).Count -ne 1 -or
+            @($registered | Where-Object { $_ -ceq 'foc.EventLog.Dump' }).Count -ne 1) {
+            $problems.Add('Enabled registry must contain exactly the two expected developer commands.')
         }
         for ($index = 0; $index -lt $events.Count; $index++) {
             $match = [regex]::Match($events[$index], '^FOC_EVENT seq=(\d+) tick=(\d+) type=(\w+) unit=([0-9A-Fa-f-]+) order=(\S+) related=(\S+) reason=(\w+) status=(\w+)->(\w+)\s*$')
@@ -184,7 +204,7 @@ foreach ($case in $cases) {
         if (!$sequenceOk -or $types.Count -ne 11 -or $unitIds.Count -ne 1 -or !$sameDump) {
             $problems.Add('Ordered ticks/types/reasons/identity or unchanged repeated dump failed.')
         }
-    } elseif ($events.Count -ne 0 -or $scenario.Count -ne 0 -or $unknown.Count -ne 2 -or
+    } elseif ($events.Count -ne 0 -or $scenario.Count -ne 0 -or $registered.Count -ne 0 -or
         $rejected.Count -ne 0 -or $empty.Count -ne 0 -or $dump.Count -ne 0) {
         $problems.Add('Commands must be unregistered and emit no scenario/domain records without opt-in.')
     }
@@ -193,7 +213,8 @@ foreach ($case in $cases) {
         NativeExitCode = $nativeExitCode; Started = $started.ToString('o'); Finished = [DateTimeOffset]::Now.ToString('o')
         ElapsedSeconds = [Math]::Round($timer.Elapsed.TotalSeconds, 3); TimeoutSeconds = $TimeoutSeconds; TimedOut = $timedOut
         LaunchError = $launchError; CleanupError = $cleanupError; Problems = @($problems.ToArray())
-        MapLoads = $mapLoaded.Count; Events = $events.Count; Scenarios = $scenario.Count; Rejected = $rejected.Count
+        MapLoads = $mapLoaded.Count; StartupWorlds = $mapWorld.Count; EditorReady = $editorReady.Count; MapCheckEntries = $mapChecks.Count
+        RegistryQueries = $registryQueries.Count; RegisteredCommands = $registered; Events = $events.Count; Scenarios = $scenario.Count; Rejected = $rejected.Count
         Empty = $empty.Count; Dumps = $dump.Count; UnknownCommands = $unknown.Count; SequenceOK = $sequenceOk
         IdenticalDumps = $sameDump; Kinds = $types.Count; UnitIdentities = $unitIds.Count
     }
@@ -209,7 +230,7 @@ $result = [ordered]@{
 Write-Json (Join-Path $out 'debug-result.json') $result
 # Keep raw paths, exceptions, command line and Editor/stdout/stderr content local.
 [pscustomobject]@{ RunId = $runId; Status = $result.Status; WrapperExitCode = $result.WrapperExitCode
-    Cases = @($results | Select-Object Case, Status, NativeExitCode, ElapsedSeconds, MapLoads, Events, Scenarios,
+    Cases = @($results | Select-Object Case, Status, NativeExitCode, ElapsedSeconds, MapLoads, StartupWorlds, EditorReady, RegistryQueries, RegisteredCommands, Events, Scenarios,
         Rejected, Empty, Dumps, UnknownCommands, SequenceOK, IdenticalDumps, Kinds, UnitIdentities)
 } | ConvertTo-Json -Depth 6
 exit $result.WrapperExitCode

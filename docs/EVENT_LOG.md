@@ -104,14 +104,14 @@ $editor = Join-Path $env:UE_ROOT 'Engine/Binaries/Win64/UnrealEditor-Cmd.exe'
 $project = Join-Path $PWD 'FogOfCommand.uproject'
 # Set $localLog to a NEW external file outside every Git checkout.
 & $editor $project /Game/Maps/Startup -unattended -nop4 -nosplash -nullrhi `
-  -FocEventDebug '-ExecCmds=foc.EventLog.RunScenario,foc.EventLog.Dump,Quit' `
+  -FocEventDebug '-ExecCmds=foc.EventLog.RunScenario,foc.EventLog.Dump,QUIT_EDITOR' `
   "-abslog=$localLog"
 ```
 
 This command has no Automation verdict: inspect native exit, scenario PASS,
 exactly 21 sequential FOC_EVENT records, all 11 types, Startup map load and absence
 of new project errors. Repeat without `-FocEventDebug`: both commands must be
-unrecognized and no FOC_EVENT records/scenario may appear. Full 23-test gate
+absent from `DumpCCmds foc.EventLog.` and no FOC_EVENT records/scenario may appear. Full 23-test gate
 commands and honest hosted CI limits are in [TESTING.md](TESTING.md). Raw logs
 remain local; publish only sanitized findings. A NullRHI map check does not prove
 GUI/PIE/rendering/GPU stability or a Shipping binary build.
@@ -129,3 +129,7 @@ The helper validates its fixed scenario contract, and reports full Editor log
 auditing as NOT RUN by the helper. Inspect other diagnostics separately; a marker
 PASS cannot hide new engine/project errors. ExecCmds uses commas between these
 ordinary commands; the Automation runner uses a separate internal command queue.
+
+For Editor process exit use QUIT_EDITOR; ordinary Quit is not the Editor shutdown
+contract. Editor unknown exec commands may be silent, so the gate verifies the
+registered-command query rather than requiring an unknown-command log phrase.
