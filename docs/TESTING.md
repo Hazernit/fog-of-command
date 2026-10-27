@@ -19,6 +19,7 @@ python scripts/validate_backlog.py
 python scripts/validate_project.py
 python -m unittest discover -s scripts/tests -p "test_*.py"
 powershell.exe -NoProfile -File scripts/tests/test_automation_report.ps1
+powershell.exe -NoProfile -File scripts/tests/test_event_debug_report.ps1
 ```
 
 These check repository contracts and failure handling. Passing them does **not**

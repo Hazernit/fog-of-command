@@ -19,6 +19,7 @@ param(
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'event_debug_report.ps1')
 
 function Get-LocalPath([string]$Value) {
     if ($Value -notmatch '^[A-Za-z]:[\\/]' -or $Value -match '["%\x21&|<>^\r\n]') {
@@ -162,10 +163,7 @@ foreach ($case in $cases) {
     $registryQueries = @($lines | Where-Object { $_ -cmatch 'Cmd: DumpCCmds foc\.EventLog\.\s*$' })
     # DumpCCmds emits one registered command name per line. Do not count command
     # execution echoes or metadata containing the same name as registry entries.
-    $registered = @($lines | Where-Object { $_ -cnotmatch 'Cmd:|commandline=|Command Line:' } | ForEach-Object {
-        $entry = [regex]::Match($_, '(?:^|:\s*)\s*(foc\.EventLog\.\w+)\s*$')
-        if ($entry.Success) { $entry.Groups[1].Value }
-    })
+    $registered = @(Get-FocRegisteredEventDebugCommands -Lines $lines)
     $unknown = @($lines | Where-Object { $_ -cmatch 'Command not recognized: foc\.EventLog\.' })
     $failed = @($lines | Where-Object { $_ -cmatch 'FOC_EVENT_DEBUG FAIL:' })
     if ($mapLoaded.Count -lt 1 -or $mapWorld.Count -lt 1 -or $editorReady.Count -lt 1) {

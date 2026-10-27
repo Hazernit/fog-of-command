@@ -105,9 +105,14 @@ proven owned harness and its Editor were stopped, and evidence was preserved.
 No other Editor/user session was closed. This is a harness failure, not a failed
 23-test domain suite. No debug PASS is inferred from it.
 
-The helper is being corrected to use Editor QUIT_EDITOR, registered-command
-query and actual Editor map markers; corrected native debug gate is **NOT RUN**
-until its fresh results are recorded here.
+The second invocation used QUIT_EDITOR and both native processes exited0; it
+loaded Startup in both cases and executed the enabled scenario successfully.
+Its wrapper still reported FAIL because the registry parser missed the actual
+UE timestamp/frame prefix before two registered names. All other enabled checks
+passed:42 event lines, one scenario, two argument refusals, two identical dumps,
+11 event kinds, one stable unit. The parser now accepts that observed format;
+eight synthetic regression cases pass in PowerShell5.1/7. Final corrected native
+helper run is NOT RUN until its fresh result is recorded below.
 
 ## Static checks and hosted CI
 

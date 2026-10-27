@@ -49,7 +49,9 @@ jobs:
       - name: Negative tests for Automation report verdicts (no Unreal)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./scripts/tests/test_automation_report.ps1
+        run: |
+          ./scripts/tests/test_automation_report.ps1
+          ./scripts/tests/test_event_debug_report.ps1
       - name: State CI coverage and remaining Windows gate
         if: always()
         shell: pwsh
