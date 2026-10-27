@@ -32,8 +32,8 @@ The completed 2026-10-26 external Blank C++ smoke used UBT auto-selected VS2022/
 ## FOC-003: build and Automation gate
 
 Follow [TESTING.md](TESTING.md) for static checks, a new ASCII clone build and
-`run_fog_of_command_tests.ps1`. By default it runs all seventeen
-`FogOfCommand` tests (three Smoke, six UnitState, eight Orders) with NullRHI and requires a complete successful JSON
+`run_fog_of_command_tests.ps1`. By default it runs all twenty-three
+`FogOfCommand` tests (three Smoke, six UnitState, eight Orders, six Events) with NullRHI and requires a complete successful JSON
 report plus native exit 0. It does not claim Editor GUI/PIE/GPU rendering coverage.
 Known startup failures #55 remain separate and visible; the location-specific
 build problem is tracked in [#57](https://github.com/Hazernit/fog-of-command/issues/57).
@@ -47,7 +47,7 @@ subsets are diagnostics and cannot substitute for that gate. Current domain/buil
 results and known limitations are in the [FOC-004 report](diagnostics/FOC-004-windows-unit-state.md).
 
 FOC-005 adds the [single-unit MOVE/HOLD lifecycle](ORDERS.md), without navigation
-or scene execution. Review it with default `-Suite All` (17 tests); `-Suite Orders`
+or scene execution. Review it with default `-Suite All` (23 tests); `-Suite Orders`
 selects its eight tests only for diagnosis and cannot replace the full gate.
 The [FOC-005 report](diagnostics/FOC-005-windows-orders.md) records the real build,
 Automation results and publication limitations separately from hosted static CI.
@@ -71,3 +71,7 @@ do not automatically grant network access for this local-only scene.
 - If UBT unexpectedly selects MSVC 14.51 or another SDK, stop and diagnose version selection before adding code workarounds. Do not patch engine source or install another IDE/SDK without approval.
 - If a GPU/device crash occurs, stop and capture a sanitized report; do not assume the game code caused the crash.
 - If a project crashes on opening, avoid random cache deletion; first preserve evidence and isolate the broken project state.
+
+FOC-006 adds the [domain event journal and opt-in isolated debug commands](EVENT_LOG.md).
+Run all23 tests for acceptance; -Suite Events is a six-test diagnostic subset.
+GUI/PIE and Shipping require separate evidence; developer commands never mutate live units.

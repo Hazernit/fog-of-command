@@ -54,3 +54,9 @@ FOC-004 introduced OrderId as identity metadata. [FOC-005](ORDERS.md) now adds t
 WorldState/PerceivedWorldState, resources beyond this unit's health/ammunition, order execution/navigation, RTS, AI and debug UI remain outside these value-state contracts.
 
 Six Automation tests cover identifiers, lifecycle, resources, invalid data, repeated operations and serialization alongside the existing three FogOfCommand.Smoke tests. Coverage includes a 512-ID sample for each GUID type, 64 repeated lifecycles, zero/INT32_MAX resource bounds, NaN/Inf, all 90 truncated frame lengths, unsupported versions and malformed fields. This is a test sample, not a mathematical proof of global GUID uniqueness. Run the combined project gate using [TESTING.md](TESTING.md); no Unreal PASS is claimed before actual Windows execution.
+
+FOC-006 keeps this standalone value API and its v1 bytes unchanged. Authoritative
+changes requiring a diagnostic trace use the timed FUnitOrders owner operations;
+[EVENT_LOG.md](EVENT_LOG.md) describes copied before/after values, no-op behavior
+and coordinated order/death batches. Direct standalone value calls do not append
+journal events. Developer diagnostics are isolated from live scene state.

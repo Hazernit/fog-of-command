@@ -45,3 +45,10 @@ UnitState's API is `CompareExchangeCurrentOrderId(ExpectedUnitId, Expected, Desi
 Eight Orders Automation groups cover Validation, Transitions, Assignment, Replacement, Idempotency, Destruction, Timestamps and Serialization (UnitState's existing current-link value round trip). The default combined gate must retain all nine prior tests and require all eight new ones. Source-level coverage is not a UE PASS until the real Windows build/run recorded in the report.
 
 Order-history/book serialization is not required for this issue and is not implemented. Separate unit values with an orphaned CurrentOrderId cannot be adopted as a coherent new order owner without the corresponding record; that import must be rejected. Full save/load, cross-owner uniqueness, history retention/eviction policy, concurrency and path execution remain outside this contract.
+
+FOC-006 adds the [bounded per-owner event journal](EVENT_LOG.md), timed owner
+initialization and validated MoveUnit/ConsumeAmmunition value operations. Commands
+use constant-work active-link checks; explicit Validate remains a full history
+audit. No callbacks, implicit Tick or order execution is introduced. The current
+combined gate is23 tests (the prior17 plus six Events); retained order-history
+semantics and UnitState v1 remain unchanged.

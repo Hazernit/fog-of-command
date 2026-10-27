@@ -1,4 +1,4 @@
-# Tests and Windows build gate (FOC-003 / FOC-004 / FOC-005)
+# Tests and Windows build gate (FOC-003 / FOC-004 / FOC-005 / FOC-006)
 
 Use the pinned environment in [ENGINE_VERSION.md](ENGINE_VERSION.md). Work in an
 ASCII checkout outside OneDrive; the location-specific C1083 is tracked in
@@ -19,6 +19,7 @@ python scripts/validate_backlog.py
 python scripts/validate_project.py
 python -m unittest discover -s scripts/tests -p "test_*.py"
 powershell.exe -NoProfile -File scripts/tests/test_automation_report.ps1
+powershell.exe -NoProfile -File scripts/tests/test_event_debug_report.ps1
 ```
 
 These check repository contracts and failure handling. Passing them does **not**
@@ -47,7 +48,7 @@ if ($LASTEXITCODE -ne 0) { throw 'C++ build failed; preserve local evidence.' }
 ## Real Unreal Automation from the Windows terminal
 
 After a successful Development Editor / Win64 build, the default `All` selection
-runs the combined **17-test** project gate (three Smoke + six UnitState + eight Orders):
+runs the combined **23-test** project gate (three Smoke + six UnitState + eight Orders + six Events):
 
 ```powershell
 ./scripts/windows/run_fog_of_command_tests.ps1 `
@@ -56,7 +57,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Automation failed or did not complete; inspect
 ```
 
 For diagnosis, append `-Suite Smoke` (three tests), `-Suite UnitState` (six tests),
-or `-Suite Orders` (eight tests)
+`-Suite Orders` (eight tests), or `-Suite Events` (six tests)
 to a separate invocation. Each subset validates its own exact set; a subset PASS
 does not replace an `All` run. The shared expected-name manifest is
 `Get-FocExpectedTests` in `scripts/windows/automation_report.ps1`. Additions or
@@ -83,7 +84,7 @@ $project = Join-Path $PWD 'FogOfCommand.uproject'
 
 `StartsWith:FogOfCommand.` selects the project namespace. Subsets instead use
 `StartsWith:FogOfCommand.Smoke.`, `StartsWith:FogOfCommand.UnitState.`, or
-`StartsWith:FogOfCommand.Orders.`. `;Quit` is part of the Automation
+`StartsWith:FogOfCommand.Orders.`, or `StartsWith:FogOfCommand.Events.`. `;Quit` is part of the Automation
 command queue, so it exits after the report is finished with the Automation
 verdict. Do not append an immediate standalone engine Quit or treat a
 `-TestExit` log phrase as a successful test verdict. No `-culture=en` is used.
@@ -92,7 +93,7 @@ The process-local LogAutomationTest verbosity preserves named engine startup
 test results for diagnosis; it does not suppress errors or change saved preferences.
 
 Expected tests use EditorContext + EngineFilter. Smoke tests require editor
-development automation; Core-only UnitState/Orders tests use WITH_DEV_AUTOMATION_TESTS
+development automation; Core-only UnitState/Orders/Events tests use WITH_DEV_AUTOMATION_TESTS
 and are selected in the Editor context. No additional gameplay subsystem:
 
 | Full test name | Contract |
@@ -114,15 +115,21 @@ and are selected in the Editor context. No additional gameplay subsystem:
 | `FogOfCommand.Orders.Destruction` | Destroyed-unit/order interactions and terminal-state rules |
 | `FogOfCommand.Orders.Timestamps` | Validate explicit timestamps and their ordering |
 | `FogOfCommand.Orders.Serialization` | Existing UnitState v1 current-order-link round trip, guarded CAS and orphan-link rejection |
+| `FogOfCommand.Events.Transitions` | Exact structured unit/resource/order transitions and payloads |
+| `FogOfCommand.Events.Ordering` | Creation epoch, equal ticks, sequence order and INT64_MAX |
+| `FogOfCommand.Events.Atomicity` | Refusals preserve unit, history, clocks and complete journal |
+| `FogOfCommand.Events.ReplacementAndDestruction` | Ordered compound replacement/death batches and reasons |
+| `FogOfCommand.Events.RepeatedOperations` | Duplicate/no-op operations and reads emit nothing |
+| `FogOfCommand.Events.Retention` | Bounded ring eviction, stable sequence and copied reads |
 
-The wrapper requires native exit **0**, all 17 exact names once for `All` (or
-the exact three/six/eight for the explicitly selected subset), every state
+The wrapper requires native exit **0**, all 23 exact names once for `All` (or
+the exact three/six/eight/six for the explicitly selected subset), every state
 `Success`, zero project warnings/errors and complete consistent report counters.
 Missing/malformed/partial/zero-test reports, duplicates, wrong suites, skipped or
 in-progress tests fail even if the process exits 0. Reports are never reused.
-Old Smoke-only or pre-Orders nine-test reports cannot satisfy the default 17-test gate. Names in this
+Old three-, nine- or seventeen-test reports cannot satisfy the default 23-test gate. Names in this
 table describe test intent, not an assertion that the new tests were compiled or
-run. FOC-005 Windows results must be recorded separately when actually obtained.
+run. FOC-006 Windows results must be recorded separately when actually obtained.
 
 This is **NullRHI editor Automation**: actual module/configuration/asset loading,
 not rendering, PIE, input controls or GPU stability. GUI/PIE remains the manual

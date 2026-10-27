@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Containers/Map.h"
-#include "Domain/UnitState.h"
+#include "Domain/SimulationEvents.h"
 
 namespace FogOfCommand::Domain
 {
@@ -53,7 +53,10 @@ enum class EOrderResult : uint8
 	TerminalConflict,
 	UnitDestroyed,
 	InvalidAmount,
-	InvariantViolation
+	InvariantViolation,
+	InvalidPosition,
+	InsufficientAmmunition,
+	EventSequenceExhausted
 };
 
 /** Immutable intent after submission. Move requires a finite target; Hold requires no target. */
@@ -97,13 +100,20 @@ public:
 	FUnitOrders& operator=(const FUnitOrders&) = delete;
 	FUnitOrders& operator=(FUnitOrders&&) = delete;
 
-	/** No history restore: any initial CurrentOrderId is rejected as an orphan. */
-	EOrderResult Initialize(const FUnitStateSnapshot& Initial);
+	/**
+	 * No history restore: any initial CurrentOrderId is rejected as an orphan.
+	 * First adoption emits UnitCreated at nonnegative At (including a valid tombstone).
+	 * A retry never emits or rewinds time. Later changes cannot precede creation.
+	 */
+	EOrderResult Initialize(const FUnitStateSnapshot& Initial, int64 At = 0);
 	const FUnitState& GetUnit() const { return Unit; }
 	const TMap<FOrderId, FOrderSnapshot>& GetHistory() const { return History; }
 	/** The pointer is borrowed and may be invalidated by the next successful command. */
 	const FOrderSnapshot* FindOrder(const FOrderId& OrderId) const { return History.Find(OrderId); }
+	/** Legacy post-creation mutation clock; creation alone leaves this unset. */
 	TOptional<int64> GetLastMutationTime() const { return LastMutationTime; }
+	/** Its last simulation tick includes creation and is the effective mutation-time boundary. */
+	const FSimulationEventLog& GetEventLog() const { return EventLog; }
 	static EOrderResult ValidateRequest(const FOrderRequest& Request);
 	/** Check lifecycle, timestamps, ownership and exactly one matching active link (or none). */
 	EOrderResult Validate() const;
@@ -127,14 +137,25 @@ public:
 	/** Coordinate the unit tombstone and active cancellation before committing either. */
 	EOrderResult DestroyUnit(const FUnitId& UnitId, int64 At);
 	EOrderResult ApplyDamage(const FUnitId& UnitId, double Amount, int64 At);
+	/** Value-state movement only: no navigation, scene update or automatic order completion. */
+	EOrderResult MoveUnit(const FUnitId& UnitId, const FVector& Position, int64 At);
+	EOrderResult ConsumeAmmunition(const FUnitId& UnitId, int32 Amount, int64 At);
 
 private:
 	EOrderResult CheckUnit(const FUnitId& UnitId) const;
 	EOrderResult CheckMutationTime(int64 At) const;
+	/** Constant-time checks for the private active link; Validate remains the explicit full audit. */
+	EOrderResult CheckActiveInvariant() const;
+	void RecordUnitEvent(ESimulationEventType Type, ESimulationEventReason Reason, int64 At,
+		const TOptional<FUnitStateSnapshot>& Before);
+	void RecordOrderEvent(ESimulationEventType Type, const FOrderSnapshot& Order, int64 At,
+		const TOptional<EOrderStatus>& PreviousStatus,
+		const TOptional<FOrderId>& RelatedOrderId = TOptional<FOrderId>());
 	EOrderResult Finish(const FUnitId& UnitId, const FOrderId& OrderId, int64 At,
 		EOrderStatus Status, EOrderEndReason Reason);
 	FUnitState Unit;
 	TMap<FOrderId, FOrderSnapshot> History;
 	TOptional<int64> LastMutationTime;
+	FSimulationEventLog EventLog;
 };
 }
